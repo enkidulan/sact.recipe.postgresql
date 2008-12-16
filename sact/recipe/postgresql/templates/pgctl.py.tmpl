@@ -1,0 +1,37 @@
+#!/usr/bin/python2.5
+
+import os
+import sys
+
+from optparse import OptionParser
+
+
+BIN_DIR = '${bin_dir}'
+DATA_DIR = '${data_dir}'
+LOGFILE = '%s/logfile' % (DATA_DIR)
+
+
+def start(logfile):
+    os.system('%s/pg_ctl -D %s -l %s start' % (BIN_DIR, DATA_DIR, logfile))
+
+def stop():
+    os.system('%s/pg_ctl -D %s stop' % (BIN_DIR, DATA_DIR))
+
+
+def main():
+    usage = "usage: %prog [options] arg"
+    parser = OptionParser(usage)
+    parser.add_option("-l", "--logfile", dest="logfile",
+                      default=LOGFILE,
+                      help="log file")
+
+    (options, args) = parser.parse_args()
+    if len(args) != 1:
+        parser.error("incorrect number of arguments")
+
+    if args[0] == 'start': start(options.logfile)
+    if args[0] == 'stop': stop()
+
+
+if __name__ == '__main__':
+    main()

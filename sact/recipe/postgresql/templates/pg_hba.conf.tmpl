@@ -1,0 +1,18 @@
+### Admin
+local   all         ${admin}                          trust
+#if $superusers
+### Superusers
+#for $superuser in $superusers
+local   all         ${superuser}                     ident sameuser
+#end for
+#end if
+#if $users
+### Users
+#for $user in $users
+local   all         ${user}                           ident sameuser
+#end for
+#end if
+
+local   all         all                               ident sameuser
+host    all         all         127.0.0.1/32          md5
+host    all         all         ::1/128               md5
