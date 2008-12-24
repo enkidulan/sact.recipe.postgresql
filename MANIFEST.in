@@ -1,0 +1,1 @@
+recursive-include sact/recipe/postgresql/templates *tmpl
