@@ -20,13 +20,13 @@ class Recipe:
         self.options = options
         self.buildout = buildout
         self.name = name
-
-        log = logging.getLogger(self.name)
+        self.log = logging.getLogger(self.name)
        
-        self.options['bin_dir'] = options.get("bin-dir", os.path.join(buildout['buildout']['parts-directory'], self.name, "bin"))
-        self.options['data_dir'] = options.get("config-dir", os.path.join(buildout['buildout']['parts-directory'], self.name, "db"))
-        self.options['pid_file'] = options.get("pid-file", os.path.join(buildout['buildout']['parts-directory'], self.name, "db", "postgresql.pid"))
-        self.options['socket_dir'] = options.get("pid-file", os.path.join(buildout['buildout']['parts-directory'], self.name, "db"))
+        self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
+        self.options['bin_dir'] = options.get("bin-dir", os.path.join(self.options['location'], "bin"))
+        self.options['data_dir'] = options.get("config-dir", os.path.join(self.options['location'], "db"))
+        self.options['pid_file'] = options.get("pid-file", os.path.join(self.options['location'], "db", "postgresql.pid"))
+        self.options['socket_dir'] = options.get("pid-file", os.path.join(self.options['location'], "db"))
         self.options['listen_addresses'] = options.get('listen_addresses', 'localhost')
         self.options['port'] = options.get('port', '5432')
         self.options['unix_socket_directory'] = options.get('unix_socket_directory', os.path.join(buildout['buildout']['parts-directory'], self.name))
@@ -54,37 +54,40 @@ class Recipe:
         self.options['admin'] = options.get("admin", "postgres")
         self.options['superusers'] = options.get("superusers", "root")
         self.options['users'] = options.get("users", "")
+        self.options['install'] = options.get("install", "yes")
 
-    def update(self):
-        self._make_pg_config()
-
-    def run(self, cmd):
-        log = logging.getLogger(self.name)
-        if os.system(cmd):
-            log.error('Error executing command: %s' % cmd)
-            raise zc.buildout.UserError('System error')
+    #def run(self, cmd):
+        #log = logging.getLogger(self.name)
+        #if os.system(cmd):
+            #log.error('Error executing command: %s' % cmd)
+            #raise zc.buildout.UserError('System error')
 
     def install(self):
-        log = logging.getLogger(self.name)
-        parts = []
   
-        try:
-            opt = self.options.copy()
-            cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, self.options)
-            cmmi.install()
+        if self.options['install'] == "yes":
+            try:
+                self.log.info('Install postgresql')
+                cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, self.options)
+                cmmi.install()
             
-        except:
-            raise
+            except:
+                raise
 
-        self._make_db()
+            self._make_db()
+            self._make_pg_config()
+            # FIXME: users / superusers not working
+            #os.system('%s/pgctl.py start' % (self.options['bin_dir']))
+            #self._create_superusers()        
+            #self._create_users()
+            #os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
+            
+        else:
+            self.update()
+            return ()
+    
+    def update(self):
         self._make_pg_config()
-        os.system('%s/pgctl.py start' % (self.options['bin_dir']))
-        self._create_superusers()        
-        self._create_users()
-        #os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
-        parts.append(self.options['location'])
-        return parts
-
+        
     def _create_superusers(self):
         superusers = self.options['superusers'].split()
         for superuser in superusers:

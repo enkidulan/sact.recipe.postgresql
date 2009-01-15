@@ -37,5 +37,9 @@ setup(name='sact.recipe.postgresql',
                         'hexagonit.recipe.cmmi',
 			'Cheetah'
                         ],
-      entry_points=entry_points,
+      entry_points = dict(console_scripts=[
+          'upload = sact.recipe.postgresql.pload:main',
+          'update-tree = zope.release.tree:main',
+          ]),
+
       )
