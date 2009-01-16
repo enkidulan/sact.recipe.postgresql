@@ -23,12 +23,12 @@ class Recipe:
         self.log = logging.getLogger(self.name)
        
         self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
-        self.options['url-bin'] = options.get("url-bin", None)
+        self.options['url-bin'] = options.get("url-bin", "")
         self.options['bin_dir'] = options.get("bin-dir", os.path.join(self.options['location'], "bin"))
         self.options['data_dir'] = options.get("config-dir", os.path.join(self.options['location'], "db"))
         self.options['pid_file'] = options.get("pid-file", os.path.join(self.options['location'], "db", "postgresql.pid"))
         self.options['socket_dir'] = options.get("pid-file", os.path.join(self.options['location'], "db"))
-        self.options['listen_addresses'] = options.get('listen_addresses', 'localhost')
+        self.options['listen_addresses'] = options.get('listen_addresses', '')
         self.options['port'] = options.get('port', '5432')
         self.options['unix_socket_directory'] = options.get('unix_socket_directory', self.options['location'])
         self.options['ssl'] = options.get('ssl', 'off')
@@ -58,34 +58,26 @@ class Recipe:
         self.options['install'] = options.get("install", "yes")
 
     def install(self):
-        if self.options['url-bin']:
-            self._install_compiled_pg()
         
-        elif self.options['install'] == "yes":  
-            self._install_cmmi_pg()
-            self._make_db()
-            self._make_pg_config()
-
-            # FIXME: users / superusers not working
-            #os.system('%s/pgctl.py start' % (self.options['bin_dir']))
-            #self._create_superusers()        
-            #self._create_users()
-            #os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
+        first = (self.options['install'] == "yes") or self.is_first_install()
         
-        elif self.options['install'] == "first":
-            if self.is_first_install():
+        if first:
+            if self.options['url-bin']:
+                self._install_compiled_pg()
+            else:
                 self._install_cmmi_pg()
                 self._make_db()
                 self._make_pg_config()
+                # FIXME: users / superusers not working
+                #os.system('%s/pgctl.py start' % (self.options['bin_dir']))
+                #self._create_superusers()        
+                #self._create_users()
+                #os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
 
-            else:
-                self._make_pg_config()
-                
-        elif self.options['install'] == "no":
-            self._make_pg_config()
-            
-        parts.append(self.options['location'])
-        return parts
+        else:
+            self._make_pg_config()      
+        
+        return self.options['location']
     
     def is_first_install(self):
         installed_file = self.buildout['buildout']['installed']
@@ -112,6 +104,7 @@ class Recipe:
         
         try:
             opt = self.options.copy()
+            opt['url'] = self.options['url-bin']
             opt['destination'] = self.options['location']
             hexagonit.recipe.download.Recipe(self.buildout, self.name, opt).install()
         except:
