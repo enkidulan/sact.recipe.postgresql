@@ -23,6 +23,7 @@ class Recipe:
         self.log = logging.getLogger(self.name)
        
         self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
+        self.options['url-bin'] = options.get("url-bin", None)
         self.options['bin_dir'] = options.get("bin-dir", os.path.join(self.options['location'], "bin"))
         self.options['data_dir'] = options.get("config-dir", os.path.join(self.options['location'], "db"))
         self.options['pid_file'] = options.get("pid-file", os.path.join(self.options['location'], "db", "postgresql.pid"))
@@ -57,7 +58,10 @@ class Recipe:
         self.options['install'] = options.get("install", "yes")
 
     def install(self):
-        if self.options['install'] == "yes":  
+        if self.options['url-bin']:
+            self._install_compiled_pg()
+        
+        elif self.options['install'] == "yes":  
             self._install_cmmi_pg()
             self._make_db()
             self._make_pg_config()
@@ -79,6 +83,9 @@ class Recipe:
                 
         elif self.options['install'] == "no":
             self._make_pg_config()
+            
+        parts.append(self.options['location'])
+        return parts
     
     def is_first_install(self):
         installed_file = self.buildout['buildout']['installed']
@@ -98,8 +105,18 @@ class Recipe:
             cmmi.install()
             
         except:
-            raise
-                    
+            raise zc.buildout.UserError("Unable to install source version of postgresql")
+        
+    def _install_compiled_pg(self):
+        # Download the binaries using hexagonit.recipe.download
+        
+        try:
+            opt = self.options.copy()
+            opt['destination'] = self.options['location']
+            hexagonit.recipe.download.Recipe(self.buildout, self.name, opt).install()
+        except:
+            raise zc.buildout.UserError("Unable to download binaries version of postgresql")
+ 
     def _create_superusers(self):
         superusers = self.options['superusers'].split()
         for superuser in superusers:
