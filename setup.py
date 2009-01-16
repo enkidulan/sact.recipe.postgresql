@@ -7,6 +7,7 @@ version = '0.1'
 
 entry_point = 'sact.recipe.postgresql:Recipe'
 entry_points = {"zc.buildout": ["default = %s" % entry_point]}
+tests_require=['zope.testing', 'zc.buildout']
 
 setup(name='sact.recipe.postgresql',
       version=version,
@@ -37,9 +38,8 @@ setup(name='sact.recipe.postgresql',
                         'hexagonit.recipe.cmmi',
 			'Cheetah'
                         ],
-      entry_points = dict(console_scripts=[
-          'upload = sact.recipe.postgresql.pload:main',
-          'update-tree = zope.release.tree:main',
-          ]),
-
+      tests_require=tests_require,
+      extras_require=dict(tests=tests_require),
+      test_suite = 'sact.recipe.postgresql.tests.test_docs.test_suite',
+      entry_points=entry_points,
       )

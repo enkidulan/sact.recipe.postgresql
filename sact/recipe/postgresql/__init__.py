@@ -29,7 +29,7 @@ class Recipe:
         self.options['socket_dir'] = options.get("pid-file", os.path.join(self.options['location'], "db"))
         self.options['listen_addresses'] = options.get('listen_addresses', 'localhost')
         self.options['port'] = options.get('port', '5432')
-        self.options['unix_socket_directory'] = options.get('unix_socket_directory', os.path.join(buildout['buildout']['parts-directory'], self.name))
+        self.options['unix_socket_directory'] = options.get('unix_socket_directory', self.options['location'])
         self.options['ssl'] = options.get('ssl', 'off')
         self.options['shared_buffers'] = options.get('shared_buffers', '24MB')
         self.options['work_mem'] = options.get('work_mem', '1MB')
@@ -56,38 +56,50 @@ class Recipe:
         self.options['users'] = options.get("users", "")
         self.options['install'] = options.get("install", "yes")
 
-    #def run(self, cmd):
-        #log = logging.getLogger(self.name)
-        #if os.system(cmd):
-            #log.error('Error executing command: %s' % cmd)
-            #raise zc.buildout.UserError('System error')
-
     def install(self):
-  
-        if self.options['install'] == "yes":
-            try:
-                self.log.info('Install postgresql')
-                cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, self.options)
-                cmmi.install()
-            
-            except:
-                raise
-
+        if self.options['install'] == "yes":  
+            self._install_cmmi_pg()
             self._make_db()
             self._make_pg_config()
+
             # FIXME: users / superusers not working
             #os.system('%s/pgctl.py start' % (self.options['bin_dir']))
             #self._create_superusers()        
             #self._create_users()
             #os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
-            
-        else:
-            self.update()
-            return ()
-    
-    def update(self):
-        self._make_pg_config()
         
+        elif self.options['install'] == "first":
+            if self.is_first_install():
+                self._install_cmmi_pg()
+                self._make_db()
+                self._make_pg_config()
+
+            else:
+                self._make_pg_config()
+                
+        elif self.options['install'] == "no":
+            self._make_pg_config()
+    
+    def is_first_install(self):
+        installed_file = self.buildout['buildout']['installed']
+        if os.path.exists(installed_file):
+            import ConfigParser
+            config = ConfigParser.ConfigParser()
+            config.readfp(open(installed_file))
+            if config.has_section('postgresql'):
+                return False
+            else:
+                return True
+      
+    def _install_cmmi_pg(self):
+        try:
+            self.log.info('Install postgresql')
+            cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, self.options)
+            cmmi.install()
+            
+        except:
+            raise
+                    
     def _create_superusers(self):
         superusers = self.options['superusers'].split()
         for superuser in superusers:
