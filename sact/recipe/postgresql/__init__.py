@@ -21,7 +21,12 @@ class Recipe:
         self.buildout = buildout
         self.name = name
         self.log = logging.getLogger(self.name)
-       
+    
+        self.options['admin'] = options.get("admin", "postgres")
+        self.options['superusers'] = options.get("superusers", "root")
+        self.options['users'] = options.get("users", "")
+        self.options['install'] = options.get("install", "yes")
+
         self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
         self.options['url-bin'] = options.get("url-bin", "")
         self.options['bin_dir'] = options.get("bin-dir", os.path.join(self.options['location'], "bin"))
@@ -32,30 +37,47 @@ class Recipe:
         self.options['port'] = options.get('port', '5432')
         self.options['unix_socket_directory'] = options.get('unix_socket_directory', self.options['location'])
         self.options['ssl'] = options.get('ssl', 'off')
+
         self.options['shared_buffers'] = options.get('shared_buffers', '24MB')
         self.options['work_mem'] = options.get('work_mem', '1MB')
+        self.options['maintenance_work_mem'] = options.get('maintenance_work_mem', '16MB')        
         self.options['temp_buffers'] = options.get('temp_buffers', '8MB')
         self.options['fsync'] = options.get('fsync', 'on')
         self.options['synchronous_commit'] = options.get('synchronous_commit', 'on')
         self.options['wal_sync_method'] = options.get('wal_sync_method', 'fsync')
         self.options['wal_buffers'] = options.get('wal_buffers', '64kB')
+        self.options['wal_writer_delay'] = options.get('wal_writer_delay', '200ms')
         self.options['client_min_messages'] = options.get('client_min_messages', 'notice')
+        self.options['update_process_title'] = options.get('update_process_title', 'on')        
+        self.options['bgwriter_delay'] = options.get('bgwriter_delay', '200ms')
+        self.options['bgwriter_lru_maxpages'] = options.get('bgwriter_lru_maxpages', '100')
+        self.options['bgwriter_lru_multiplier'] = options.get('bgwriter_lru_multiplier', '2.0')
+        self.options['max_fsm_pages'] = options.get('max_fsm_pages', '153600')
+        self.options['max_fsm_relations'] = options.get('max_fsm_relations', '1000')
+        self.options['max_files_per_process'] = options.get('max_files_per_process', '1000')
+        self.options['silent_mode'] = options.get('silent_mode', 'off')
+        self.options['track_activities'] = options.get('track_activities', 'on')
+        self.options['track_counts'] = options.get('track_counts', 'on')
+        self.options['commit_delay'] = options.get('commit_delay', '0')
+        self.options['commit_siblings'] = options.get('commit_siblings', '5')
+        self.options['debug_print_parse'] = options.get('debug_print_parse', 'off')
+        self.options['debug_print_rewritten'] = options.get('debug_print_rewritten', 'off')
+        self.options['debug_print_plan'] = options.get('debug_print_plan', 'off')
+        self.options['debug_pretty_print'] = options.get('debug_pretty_print', 'off')
         self.options['log_min_messages'] = options.get('log_min_messages', 'notice')
         self.options['log_error_verbosity'] = options.get('log_error_verbosity', 'default')
         self.options['log_min_error_statement'] = options.get('log_min_error_statement', 'error')
         self.options['log_min_duration_statement'] = options.get('log_min_duration_statement', '-1')
-        self.options['silent_mode'] = options.get('silent_mode', 'off')
-        self.options['log_line_prefix'] = options.get('log_line_prefix', '%t ')
-        self.options['track_activities'] = options.get('track_activities', 'on')
-        self.options['track_counts'] = options.get('track_counts', 'on')
         self.options['log_parser_stats'] = options.get('log_parser_stats', 'off')
         self.options['log_planner_stats'] = options.get('log_planner_stats', 'off')
         self.options['log_executor_stats'] = options.get('log_executor_stats', 'off')
-        self.options['log_statement_stats'] = options.get('log_statement_stats', 'off')
-        self.options['admin'] = options.get("admin", "postgres")
-        self.options['superusers'] = options.get("superusers", "root")
-        self.options['users'] = options.get("users", "")
-        self.options['install'] = options.get("install", "yes")
+        self.options['log_statement_stats'] = options.get('log_statement_stats', 'off')       
+        self.options['log_checkpoints'] = options.get('log_checkpoints', 'off')
+        self.options['log_connections'] = options.get('log_connections', 'off')
+        self.options['log_disconnections'] = options.get('log_disconnections', 'off')
+        self.options['log_duration'] = options.get('log_duration', 'off')
+        self.options['log_lock_waits'] = options.get('log_lock_waits', 'off')
+        self.options['log_line_prefix'] = options.get('log_line_prefix', '%t ')        
 
     def install(self):
         
@@ -143,7 +165,8 @@ class Recipe:
         pghba_tpl = Template(file=os.path.join(current_dir,'templates', 'pg_hba.conf.tmpl'))
         pgctl_tpl = Template(file=os.path.join(current_dir,'templates', 'pgctl.py.tmpl'))
         psql_tpl = Template(file=os.path.join(current_dir,'templates', 'psql.sh.tmpl'))
-        
+
+        fo
         pg_tpl.data_dir = self.options['data_dir']
         pg_tpl.config_dir = self.options['data_dir']                
         pg_tpl.pid_file = self.options['pid_file']
@@ -171,7 +194,28 @@ class Recipe:
         pg_tpl.log_parser_stats = self.options['log_parser_stats']
         pg_tpl.log_planner_stats = self.options['log_planner_stats']
         pg_tpl.log_executor_stats = self.options['log_executor_stats']
-        pg_tpl.log_statement_stats = self.options['log_statement_stats']
+        pg_tpl.log_statement_stats = self.options['log_statement_stats']    
+        pg.tpl.update_process_title = self.options['update_process_title']   
+        pg.tpl.wal_writer_delay = self.options['wal_writer_delay']
+        pg.tpl.bgwriter_delay = self.options['bgwriter_delay']
+        pg.tpl.bgwriter_lru_maxpages = self.options['bgwriter_lru_maxpages']
+        pg.tpl.bgwriter_lru_multiplier = self.options['bgwriter_lru_multiplier']
+        pg.tpl.max_fsm_pages = self.options['max_fsm_pages']
+        pg.tpl.max_fsm_relations = self.options['max_fsm_relations']
+        pg.tpl.maintenance_work_mem = self.options['maintenance_work_mem']
+        pg.tpl.max_files_per_process = self.options['max_files_per_process']
+        pg.tpl.commit_delay = self.options['commit_delay']
+        pg.tpl.commit_siblings = self.options['commit_siblings']
+        pg.tpl.debug_print_parse = self.options['debug_print_parse']
+        pg.tpl.debug_print_rewritten = self.options['debug_print_rewritten']
+        pg.tpl.debug_print_plan = self.options['debug_print_plan']
+        pg.tpl.debug_pretty_print = self.options['debug_pretty_print']
+        pg.tpl.log_checkpoints = self.options['log_checkpoints']
+        pg.tpl.log_connections = self.options['log_connections']
+        pg.tpl.log_disconnections = self.options['log_disconnections']
+        pg.tpl.log_duration = self.options['log_duration']
+        pg.tpl.log_lock_waits = self.options['log_lock_waits']
+        
         pghba_tpl.superusers = self.options['superusers'].split()     
         pghba_tpl.users = self.options['users'].split()
         pghba_tpl.admin = self.options['admin']
