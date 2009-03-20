@@ -1,16 +1,21 @@
-# -*- coding: utf-8 -*-
-import os
-
 from setuptools import setup, find_packages
+
+def get_version(version):
+    try:
+        if "dev" in version:
+            import os
+            from mercurial import hg, ui
+            repo = hg.repository(ui.ui(),os.path.abspath(os.curdir))
+            return "%s-r%d" % (version, len(repo.changelog)-1)
+        else:
+            return version
+    except:
+        return version
 
 version = '0.1'
 
-entry_point = 'sact.recipe.postgresql:Recipe'
-entry_points = {"zc.buildout": ["default = %s" % entry_point]}
-tests_require=['zope.testing', 'zc.buildout']
-
 setup(name='sact.recipe.postgresql',
-      version=version,
+      version=get_version(version),
       description="ZC.buildout recipe to build Postgresql.",
       # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
@@ -32,14 +37,22 @@ setup(name='sact.recipe.postgresql',
         'sact.recipe.postgresql.templates': ['*.tmpl'],
       },
       zip_safe=False,
-      install_requires=['setuptools',
-                        'zc.buildout',
-                        # -*- Extra requirements: -*-
-                        'hexagonit.recipe.cmmi',
-			'Cheetah'
-                        ],
-      tests_require=tests_require,
-      extras_require=dict(tests=tests_require),
-      test_suite = 'sact.recipe.postgresql.tests.test_docs.test_suite',
-      entry_points=entry_points,
+      install_requires=[
+        'setuptools',
+        # -*- Extra requirements: -*-
+        'hexagonit.recipe.cmmi',
+	'Cheetah'
+      ],
+      tests_require=['zope.testing',
+        # -*- Extra requirements: -*-
+        'zc.buildout',
+      ],
+      extras_require={'test':[
+        'zope.testing',
+        # -*- Extra requirements: -*-
+        'zc.buildout',
+      ]},
+      entry_points={
+      'zc.buildout': ["default = sact.recipe.postgresql:Recipe"],
+      },
       )

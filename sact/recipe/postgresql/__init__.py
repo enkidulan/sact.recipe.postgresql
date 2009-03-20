@@ -4,6 +4,7 @@ import tempfile
 import logging
 import urllib
 import shutil
+import subprocess
 import md5
 import imp
 import os
@@ -86,15 +87,31 @@ class Recipe:
         if first:
             if self.options['url-bin']:
                 self._install_compiled_pg()
-            else:
-                self._install_cmmi_pg()
-                self._make_db()
+                self.log.info('Update PG configuration')
                 self._make_pg_config()
                 # FIXME: users / superusers not working
-                #os.system('%s/pgctl.py start' % (self.options['bin_dir']))
-                #self._create_superusers()        
-                #self._create_users()
-                #os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
+                
+                cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
+                p_start = subprocess.Popen(cmd, shell=True)
+                import time
+                time.sleep(3.0)
+                p_start.communicate(self._create_superusers())
+                p_start.communicate(self._create_users())
+                cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
+                p_stop = subprocess.Popen(cmd, shell=True)
+                p_stop.communicate(p_start)
+
+            else:
+                self._install_cmmi_pg()
+                self.log.info('Create database')
+                self._make_db()
+                self.log.info('Update PG configuration')
+                self._make_pg_config()
+                # FIXME: users / superusers not working
+                os.system('%s/pgctl.py start' % (self.options['bin_dir']))
+                self._create_superusers()        
+                self._create_users()
+                os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
 
         else:
             self._make_pg_config()      
@@ -135,24 +152,22 @@ class Recipe:
     def _create_superusers(self):
         superusers = self.options['superusers'].split()
         for superuser in superusers:
-            print 'create superuser: %s' % superuser
-            cmd = '%s/createuser -s -d -r -h %s -U %s %s' % (self.options['bin_dir'],
+            self.log.info('create superuser %s' % superuser)
+            cmd = '%s/createuser -s -d -r -h %s -U %s %s' % (self.buildout['buildout']['bin-directory'],
                                                        self.options['socket_dir'],
                                                        self.options['admin'],
                                                        superuser)
-            print cmd
-            os.system(cmd)
+            p = subprocess.Popen(cmd, shell=True)
             
     def _create_users(self):
         users = self.options['users'].split()
         for user in users:
-            print 'create user: %s' % user
-            cmd = '%s/createuser -S -D -R -h %s -U %s %s' % (self.options['bin_dir'],
+            self.log.info('create user %s' % user)
+            cmd = '%s/createuser -S -D -R -h %s -U %s %s' % (self.buildout['buildout']['bin-directory'],
                                                  self.options['socket_dir'],
                                                  self.options['admin'],
                                                  user)
-            print cmd
-            os.system(cmd)
+            p = subprocess.Popen(cmd, shell=True)
             
     def _make_db(self):
         os.mkdir(self.options['data_dir'])
@@ -165,8 +180,10 @@ class Recipe:
         pghba_tpl = Template(file=os.path.join(current_dir,'templates', 'pg_hba.conf.tmpl'))
         pgctl_tpl = Template(file=os.path.join(current_dir,'templates', 'pgctl.py.tmpl'))
         psql_tpl = Template(file=os.path.join(current_dir,'templates', 'psql.sh.tmpl'))
+        createuser_tpl = Template(file=os.path.join(current_dir,'templates', 'createuser.sh.tmpl'))
+        createdb_tpl = Template(file=os.path.join(current_dir,'templates', 'createdb.sh.tmpl'))
 
-        fo
+
         pg_tpl.data_dir = self.options['data_dir']
         pg_tpl.config_dir = self.options['data_dir']                
         pg_tpl.pid_file = self.options['pid_file']
@@ -195,26 +212,27 @@ class Recipe:
         pg_tpl.log_planner_stats = self.options['log_planner_stats']
         pg_tpl.log_executor_stats = self.options['log_executor_stats']
         pg_tpl.log_statement_stats = self.options['log_statement_stats']    
-        pg.tpl.update_process_title = self.options['update_process_title']   
-        pg.tpl.wal_writer_delay = self.options['wal_writer_delay']
-        pg.tpl.bgwriter_delay = self.options['bgwriter_delay']
-        pg.tpl.bgwriter_lru_maxpages = self.options['bgwriter_lru_maxpages']
-        pg.tpl.bgwriter_lru_multiplier = self.options['bgwriter_lru_multiplier']
-        pg.tpl.max_fsm_pages = self.options['max_fsm_pages']
-        pg.tpl.max_fsm_relations = self.options['max_fsm_relations']
-        pg.tpl.maintenance_work_mem = self.options['maintenance_work_mem']
-        pg.tpl.max_files_per_process = self.options['max_files_per_process']
-        pg.tpl.commit_delay = self.options['commit_delay']
-        pg.tpl.commit_siblings = self.options['commit_siblings']
-        pg.tpl.debug_print_parse = self.options['debug_print_parse']
-        pg.tpl.debug_print_rewritten = self.options['debug_print_rewritten']
-        pg.tpl.debug_print_plan = self.options['debug_print_plan']
-        pg.tpl.debug_pretty_print = self.options['debug_pretty_print']
-        pg.tpl.log_checkpoints = self.options['log_checkpoints']
-        pg.tpl.log_connections = self.options['log_connections']
-        pg.tpl.log_disconnections = self.options['log_disconnections']
-        pg.tpl.log_duration = self.options['log_duration']
-        pg.tpl.log_lock_waits = self.options['log_lock_waits']
+        pg_tpl.update_process_title = self.options['update_process_title']   
+        pg_tpl.wal_writer_delay = self.options['wal_writer_delay']
+        pg_tpl.bgwriter_delay = self.options['bgwriter_delay']
+        pg_tpl.bgwriter_lru_maxpages = self.options['bgwriter_lru_maxpages']
+        pg_tpl.bgwriter_lru_multiplier = self.options['bgwriter_lru_multiplier']
+        pg_tpl.max_fsm_pages = self.options['max_fsm_pages']
+        pg_tpl.max_fsm_relations = self.options['max_fsm_relations']
+        pg_tpl.maintenance_work_mem = self.options['maintenance_work_mem']
+        pg_tpl.max_files_per_process = self.options['max_files_per_process']
+        pg_tpl.commit_delay = self.options['commit_delay']
+        pg_tpl.commit_siblings = self.options['commit_siblings']
+        pg_tpl.debug_print_parse = self.options['debug_print_parse']
+        pg_tpl.debug_print_rewritten = self.options['debug_print_rewritten']
+        pg_tpl.debug_print_plan = self.options['debug_print_plan']
+        pg_tpl.debug_pretty_print = self.options['debug_pretty_print']
+        pg_tpl.log_checkpoints = self.options['log_checkpoints']
+        pg_tpl.log_connections = self.options['log_connections']
+        pg_tpl.log_disconnections = self.options['log_disconnections']
+        pg_tpl.log_duration = self.options['log_duration']
+        pg_tpl.log_lock_waits = self.options['log_lock_waits']
+        pg_tpl.log_line_prefix = self.options['log_line_prefix']
         
         pghba_tpl.superusers = self.options['superusers'].split()     
         pghba_tpl.users = self.options['users'].split()
@@ -222,18 +240,30 @@ class Recipe:
         
         pg_fd = open(os.path.join(self.options['data_dir'], "postgresql.conf"),'w')
         pghba_fd = open(os.path.join(self.options['data_dir'], "pg_hba.conf"),'w')
-        pgctl_fd = open(os.path.join(self.options['bin_dir'], "pgctl.py"),'w')
-        psql_fd = open(os.path.join(self.options['bin_dir'], "psql.sh"),'w')
+        
+        target=os.path.join(self.buildout["buildout"]["bin-directory"])
+        pgctl_fd = open(os.path.join(target, "pgctl"),'w')
+        psql_fd = open(os.path.join(target, "psql"),'w')
+        createuser_fd = open(os.path.join(target, "createuser"),'w')
+        createdb_fd = open(os.path.join(target, "createdb"),'w')
 
         pgctl_tpl.bin_dir = self.options['bin_dir']
         pgctl_tpl.data_dir = self.options['socket_dir']
         psql_tpl.bin_dir = self.options['bin_dir']
         psql_tpl.socket_dir = self.options['socket_dir']
+        createuser_tpl.bin_dir = self.options['bin_dir']
+        createuser_tpl.socket_dir = self.options['socket_dir']
+        createdb_tpl.bin_dir = self.options['bin_dir']
+        createdb_tpl.socket_dir = self.options['socket_dir']
 
         print  >> pg_fd, pg_tpl
         print  >> pghba_fd, pghba_tpl
         print  >> pgctl_fd, pgctl_tpl
         print  >> psql_fd, psql_tpl
+        print  >> createdb_fd, createdb_tpl
+        print  >> createuser_fd, createuser_tpl
         
-        os.chmod(os.path.join(self.options['bin_dir'], "pgctl.py"), 0755) 
-        os.chmod(os.path.join(self.options['bin_dir'], "psql.sh"), 0755)
+        os.chmod(os.path.join(target, "pgctl"), 0755) 
+        os.chmod(os.path.join(target, "psql"), 0755)
+        os.chmod(os.path.join(target, "createuser"), 0755)
+        os.chmod(os.path.join(target, "createdb"), 0755)
