@@ -12,7 +12,7 @@ def get_version(version):
     except:
         return version
 
-version = '0.1'
+version = '0.1dev'
 
 setup(name='sact.recipe.postgresql',
       version=get_version(version),
