@@ -108,10 +108,10 @@ class Recipe:
                 self.log.info('Update PG configuration')
                 self._make_pg_config()
                 # FIXME: users / superusers not working
-                os.system('%s/pgctl.py start' % (self.options['bin_dir']))
+                os.system('%s/pgctl start' % (self.options['bin_dir']))
                 self._create_superusers()        
                 self._create_users()
-                os.system('%s/pgctl.py stop' % (self.options['bin_dir']))       
+                os.system('%s/pgctl stop' % (self.options['bin_dir']))       
 
         else:
             self._make_pg_config()      
