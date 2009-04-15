@@ -89,7 +89,6 @@ class Recipe:
                 self._install_compiled_pg()
                 self.log.info('Update PG configuration')
                 self._make_pg_config()
-                # FIXME: users / superusers not working
                 
                 cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
                 p_start = subprocess.Popen(cmd, shell=True)
@@ -107,11 +106,16 @@ class Recipe:
                 self._make_db()
                 self.log.info('Update PG configuration')
                 self._make_pg_config()
-                # FIXME: users / superusers not working
-                os.system('%s/pgctl start' % (self.buildout['buildout']['bin-directory']))
-                self._create_superusers()        
-                self._create_users()
-                os.system('%s/pgctl stop' % (self.buildout['buildout']['bin-directory']))
+
+                cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
+                p_start = subprocess.Popen(cmd, shell=True)
+                import time
+                time.sleep(3.0)
+                p_start.communicate(self._create_superusers())
+                p_start.communicate(self._create_users())
+                cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
+                p_stop = subprocess.Popen(cmd, shell=True)
+                p_stop.communicate(p_start)
 
         else:
             self._make_pg_config()      
