@@ -26,7 +26,6 @@ class Recipe:
         self.options['admin'] = options.get("admin", "postgres")
         self.options['superusers'] = options.get("superusers", "root")
         self.options['users'] = options.get("users", "")
-        self.options['install'] = options.get("install", "yes")
 
         self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
         self.options['url-bin'] = options.get("url-bin", "")
@@ -81,62 +80,35 @@ class Recipe:
         self.options['log_line_prefix'] = options.get('log_line_prefix', '%t ')
 
     def install(self):
-
-        first = (self.options['install'] == "yes") or self.is_first_install()
-
-        if first:
-            if self.options['url-bin']:
-                self._install_compiled_pg()
-                self.log.info('Update PG configuration')
-                self._make_pg_config()
-
-                cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
-                p_start = subprocess.Popen(cmd, shell=True)
-                import time
-                time.sleep(3.0)
-                p_start.communicate(self._create_superusers())
-                p_start.communicate(self._create_users())
-                cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
-                p_stop = subprocess.Popen(cmd, shell=True)
-                p_stop.communicate(p_start)
-
-            else:
-                self._install_cmmi_pg()
-                self.log.info('Create database')
-                self._make_db()
-                self.log.info('Update PG configuration')
-                self._make_pg_config()
-
-                cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
-                p_start = subprocess.Popen(cmd, shell=True)
-                import time
-                time.sleep(3.0)
-                p_start.communicate(self._create_superusers())
-                p_start.communicate(self._create_users())
-                cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
-                p_stop = subprocess.Popen(cmd, shell=True)
-                p_stop.communicate(p_start)
-
+        if self.options['url-bin']:
+            self._install_compiled_pg()
         else:
-            self._make_pg_config()
+            self._install_cmmi_pg()
+            self.log.info('Create database')
+            self._make_db()
+
+        self._make_pg_config()
+
+        cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
+        p_start = subprocess.Popen(cmd, shell=True)
+        import time
+        time.sleep(3.0)
+        p_start.communicate(self._create_superusers())
+        p_start.communicate(self._create_users())
+        cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
+        p_stop = subprocess.Popen(cmd, shell=True)
+        p_stop.communicate(p_start)
 
         return self.options['location']
 
-    def is_first_install(self):
-        installed_file = self.buildout['buildout']['installed']
-        if os.path.exists(installed_file):
-            import ConfigParser
-            config = ConfigParser.ConfigParser()
-            config.readfp(open(installed_file))
-            if config.has_section('postgresql'):
-                return False
-            else:
-                return True
+    def update(self):
+        self._make_pg_config()
 
     def _install_cmmi_pg(self):
         try:
             self.log.info('Install postgresql')
-            cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, self.options)
+            name = self.name + '-hexagonit.cmmi'
+            cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, name, self.options)
             cmmi.install()
 
         except:
@@ -149,7 +121,8 @@ class Recipe:
             opt = self.options.copy()
             opt['url'] = self.options['url-bin']
             opt['destination'] = self.options['location']
-            hexagonit.recipe.download.Recipe(self.buildout, self.name, opt).install()
+            name = self.name + '-hexagonit.download'
+            hexagonit.recipe.download.Recipe(self.buildout, name, opt).install()
         except:
             raise zc.buildout.UserError("Unable to download binaries version of postgresql")
 
@@ -180,6 +153,7 @@ class Recipe:
         os.system(cmd)
 
     def _make_pg_config(self):
+        self.log.info("Updating PostgreSQL configuration")
         pg_tpl = Template(file=os.path.join(current_dir,'templates', 'postgresql.conf.tmpl'))
         pghba_tpl = Template(file=os.path.join(current_dir,'templates', 'pg_hba.conf.tmpl'))
         pgctl_tpl = Template(file=os.path.join(current_dir,'templates', 'pgctl.py.tmpl'))
