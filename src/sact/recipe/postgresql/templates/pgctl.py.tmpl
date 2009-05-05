@@ -12,10 +12,12 @@ LOGFILE = '%s/logfile' % (DATA_DIR)
 
 
 def start(logfile):
-    os.system('%s/pg_ctl -D %s -l %s start' % (BIN_DIR, DATA_DIR, logfile))
+    # Wait at most five seconds for the server to start
+    os.system('%s/pg_ctl -D %s -w -t 5 -l %s start' % (BIN_DIR, DATA_DIR, logfile))
 
 def stop():
-    os.system('%s/pg_ctl -D %s stop' % (BIN_DIR, DATA_DIR))
+    # Wait at most five seconds for the server to stop
+    os.system('%s/pg_ctl -D %s -w -t 5 -m fast stop' % (BIN_DIR, DATA_DIR))
 
 
 def main():
@@ -35,3 +37,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+# vim:ft=python

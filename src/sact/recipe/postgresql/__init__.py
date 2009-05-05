@@ -1,13 +1,10 @@
 import zc.buildout
-import urlparse
-import tempfile
 import logging
-import urllib
-import shutil
 import subprocess
-import md5
-import imp
 import os
+import time
+
+from zc.buildout import UserError
 
 import hexagonit.recipe.cmmi
 from Cheetah.Template import Template
@@ -91,13 +88,16 @@ class Recipe:
 
         cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
         p_start = subprocess.Popen(cmd, shell=True)
-        import time
-        time.sleep(3.0)
-        p_start.communicate(self._create_superusers())
-        p_start.communicate(self._create_users())
+        p_start.wait()
+
+        self.wait_for_startup()
+
+        self._create_superusers()
+        self._create_users()
+
         cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
         p_stop = subprocess.Popen(cmd, shell=True)
-        p_stop.communicate(p_start)
+        p_stop.wait()
 
         return self.options['location']
 
@@ -110,7 +110,6 @@ class Recipe:
             name = self.name + '-hexagonit.cmmi'
             cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, name, self.options)
             cmmi.install()
-
         except:
             raise zc.buildout.UserError("Unable to install source version of postgresql")
 
@@ -126,6 +125,45 @@ class Recipe:
         except:
             raise zc.buildout.UserError("Unable to download binaries version of postgresql")
 
+    def wait_for_startup(self, max_try=10, wait_time=0.5):
+        """Wait for the database to start.
+
+        It tries to connect to the database a certain number of time, waiting
+        a lap of time before connecting again.
+
+        As long as we do not receive an error code of 0, it means the database
+        is still trying to launch itself. If the server is OK to start, we can
+        still receive an error message while connecting, saying something like
+        "Please wait while the database server is starting up..."
+        """
+
+        self.log.info("Wait for the database to startup...")
+        cmd = [
+            os.path.join(self.buildout['buildout']['bin-directory'], 'psql'),
+            '-h', self.options['socket_dir'],
+            '-U', self.options['admin'],
+            '-l'
+        ]
+
+        count = 0
+        while count < max_try:
+            proc = subprocess.Popen(cmd,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            proc.wait()
+            if proc.returncode == 0:
+                # Ok, we were able to connect, the server should have started
+                break
+
+            count += 1
+            time.sleep(wait_time)
+
+        else:
+            # Stop the buildout, we have waited too much time and it means their
+            # should be some kind of problem.
+            raise UserError("Unable to communicate with PostgreSQL:\n%s" %
+                            proc.stdout.read())
+
     def _create_superusers(self):
         superusers = self.options['superusers'].split()
         for superuser in superusers:
@@ -135,6 +173,7 @@ class Recipe:
                                                        self.options['admin'],
                                                        superuser)
             p = subprocess.Popen(cmd, shell=True)
+            p.wait()
 
     def _create_users(self):
         users = self.options['users'].split()
@@ -145,6 +184,7 @@ class Recipe:
                                                  self.options['admin'],
                                                  user)
             p = subprocess.Popen(cmd, shell=True)
+            p.wait()
 
     def _make_db(self):
         os.mkdir(self.options['data_dir'])
@@ -245,3 +285,21 @@ class Recipe:
         os.chmod(os.path.join(target, "psql"), 0755)
         os.chmod(os.path.join(target, "createuser"), 0755)
         os.chmod(os.path.join(target, "createdb"), 0755)
+
+
+def uninstall_postgresql(name, options):
+    """Shutdown PostgreSQL server before uninstalling it."""
+
+    logging.getLogger(name).info("Trying to stop PostgreSQL server...")
+
+    cmd = [os.path.join(options['bin_dir'], 'pg_ctl'),
+           '-D', options['socket_dir'],
+           '-w',
+           '-t', '1',
+           '-m', 'immediate',
+           'stop']
+
+    subprocess.Popen(cmd,
+                     stdout=subprocess.PIPE,
+                     stderr=subprocess.STDOUT
+                    ).wait()

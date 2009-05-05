@@ -53,7 +53,11 @@ setup(name='sact.recipe.postgresql',
         # -*- Extra requirements: -*-
         'zc.buildout',
       ]},
-      entry_points={
-      'zc.buildout': ["default = sact.recipe.postgresql:Recipe"],
-      },
+      entry_points="""
+      [zc.buildout]
+      default = sact.recipe.postgresql:Recipe
+
+      [zc.buildout.uninstall]
+      default = sact.recipe.postgresql:uninstall_postgresql
+      """,
       )
