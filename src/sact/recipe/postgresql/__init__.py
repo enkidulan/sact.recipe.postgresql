@@ -22,7 +22,7 @@ class Recipe:
         self.buildout = buildout
         self.name = name
         self.log = logging.getLogger(self.name)
-    
+
         self.options['admin'] = options.get("admin", "postgres")
         self.options['superusers'] = options.get("superusers", "root")
         self.options['users'] = options.get("users", "")
@@ -41,7 +41,7 @@ class Recipe:
 
         self.options['shared_buffers'] = options.get('shared_buffers', '24MB')
         self.options['work_mem'] = options.get('work_mem', '1MB')
-        self.options['maintenance_work_mem'] = options.get('maintenance_work_mem', '16MB')        
+        self.options['maintenance_work_mem'] = options.get('maintenance_work_mem', '16MB')
         self.options['temp_buffers'] = options.get('temp_buffers', '8MB')
         self.options['fsync'] = options.get('fsync', 'on')
         self.options['synchronous_commit'] = options.get('synchronous_commit', 'on')
@@ -49,7 +49,7 @@ class Recipe:
         self.options['wal_buffers'] = options.get('wal_buffers', '64kB')
         self.options['wal_writer_delay'] = options.get('wal_writer_delay', '200ms')
         self.options['client_min_messages'] = options.get('client_min_messages', 'notice')
-        self.options['update_process_title'] = options.get('update_process_title', 'on')        
+        self.options['update_process_title'] = options.get('update_process_title', 'on')
         self.options['bgwriter_delay'] = options.get('bgwriter_delay', '200ms')
         self.options['bgwriter_lru_maxpages'] = options.get('bgwriter_lru_maxpages', '100')
         self.options['bgwriter_lru_multiplier'] = options.get('bgwriter_lru_multiplier', '2.0')
@@ -72,24 +72,24 @@ class Recipe:
         self.options['log_parser_stats'] = options.get('log_parser_stats', 'off')
         self.options['log_planner_stats'] = options.get('log_planner_stats', 'off')
         self.options['log_executor_stats'] = options.get('log_executor_stats', 'off')
-        self.options['log_statement_stats'] = options.get('log_statement_stats', 'off')       
+        self.options['log_statement_stats'] = options.get('log_statement_stats', 'off')
         self.options['log_checkpoints'] = options.get('log_checkpoints', 'off')
         self.options['log_connections'] = options.get('log_connections', 'off')
         self.options['log_disconnections'] = options.get('log_disconnections', 'off')
         self.options['log_duration'] = options.get('log_duration', 'off')
         self.options['log_lock_waits'] = options.get('log_lock_waits', 'off')
-        self.options['log_line_prefix'] = options.get('log_line_prefix', '%t ')        
+        self.options['log_line_prefix'] = options.get('log_line_prefix', '%t ')
 
     def install(self):
-        
+
         first = (self.options['install'] == "yes") or self.is_first_install()
-        
+
         if first:
             if self.options['url-bin']:
                 self._install_compiled_pg()
                 self.log.info('Update PG configuration')
                 self._make_pg_config()
-                
+
                 cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
                 p_start = subprocess.Popen(cmd, shell=True)
                 import time
@@ -118,10 +118,10 @@ class Recipe:
                 p_stop.communicate(p_start)
 
         else:
-            self._make_pg_config()      
-        
+            self._make_pg_config()
+
         return self.options['location']
-    
+
     def is_first_install(self):
         installed_file = self.buildout['buildout']['installed']
         if os.path.exists(installed_file):
@@ -132,19 +132,19 @@ class Recipe:
                 return False
             else:
                 return True
-      
+
     def _install_cmmi_pg(self):
         try:
             self.log.info('Install postgresql')
             cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, self.options)
             cmmi.install()
-            
+
         except:
             raise zc.buildout.UserError("Unable to install source version of postgresql")
-        
+
     def _install_compiled_pg(self):
         # Download the binaries using hexagonit.recipe.download
-        
+
         try:
             opt = self.options.copy()
             opt['url'] = self.options['url-bin']
@@ -152,7 +152,7 @@ class Recipe:
             hexagonit.recipe.download.Recipe(self.buildout, self.name, opt).install()
         except:
             raise zc.buildout.UserError("Unable to download binaries version of postgresql")
- 
+
     def _create_superusers(self):
         superusers = self.options['superusers'].split()
         for superuser in superusers:
@@ -162,7 +162,7 @@ class Recipe:
                                                        self.options['admin'],
                                                        superuser)
             p = subprocess.Popen(cmd, shell=True)
-            
+
     def _create_users(self):
         users = self.options['users'].split()
         for user in users:
@@ -172,13 +172,13 @@ class Recipe:
                                                  self.options['admin'],
                                                  user)
             p = subprocess.Popen(cmd, shell=True)
-            
+
     def _make_db(self):
         os.mkdir(self.options['data_dir'])
         cmd = '%s/initdb -D %s -U %s' % (self.options['bin_dir'], self.options['data_dir'], self.options['admin'])
         os.chdir(self.options['bin_dir'])
         os.system(cmd)
-                                                                           
+
     def _make_pg_config(self):
         pg_tpl = Template(file=os.path.join(current_dir,'templates', 'postgresql.conf.tmpl'))
         pghba_tpl = Template(file=os.path.join(current_dir,'templates', 'pg_hba.conf.tmpl'))
@@ -189,7 +189,7 @@ class Recipe:
 
 
         pg_tpl.data_dir = self.options['data_dir']
-        pg_tpl.config_dir = self.options['data_dir']                
+        pg_tpl.config_dir = self.options['data_dir']
         pg_tpl.pid_file = self.options['pid_file']
         pg_tpl.socket_dir = self.options['socket_dir']
         pg_tpl.listen_addresses = self.options['listen_addresses']
@@ -215,8 +215,8 @@ class Recipe:
         pg_tpl.log_parser_stats = self.options['log_parser_stats']
         pg_tpl.log_planner_stats = self.options['log_planner_stats']
         pg_tpl.log_executor_stats = self.options['log_executor_stats']
-        pg_tpl.log_statement_stats = self.options['log_statement_stats']    
-        pg_tpl.update_process_title = self.options['update_process_title']   
+        pg_tpl.log_statement_stats = self.options['log_statement_stats']
+        pg_tpl.update_process_title = self.options['update_process_title']
         pg_tpl.wal_writer_delay = self.options['wal_writer_delay']
         pg_tpl.bgwriter_delay = self.options['bgwriter_delay']
         pg_tpl.bgwriter_lru_maxpages = self.options['bgwriter_lru_maxpages']
@@ -237,14 +237,14 @@ class Recipe:
         pg_tpl.log_duration = self.options['log_duration']
         pg_tpl.log_lock_waits = self.options['log_lock_waits']
         pg_tpl.log_line_prefix = self.options['log_line_prefix']
-        
-        pghba_tpl.superusers = self.options['superusers'].split()     
+
+        pghba_tpl.superusers = self.options['superusers'].split()
         pghba_tpl.users = self.options['users'].split()
         pghba_tpl.admin = self.options['admin']
-        
+
         pg_fd = open(os.path.join(self.options['data_dir'], "postgresql.conf"),'w')
         pghba_fd = open(os.path.join(self.options['data_dir'], "pg_hba.conf"),'w')
-        
+
         target=os.path.join(self.buildout["buildout"]["bin-directory"])
         pgctl_fd = open(os.path.join(target, "pgctl"),'w')
         psql_fd = open(os.path.join(target, "psql"),'w')
@@ -266,8 +266,8 @@ class Recipe:
         print  >> psql_fd, psql_tpl
         print  >> createdb_fd, createdb_tpl
         print  >> createuser_fd, createuser_tpl
-        
-        os.chmod(os.path.join(target, "pgctl"), 0755) 
+
+        os.chmod(os.path.join(target, "pgctl"), 0755)
         os.chmod(os.path.join(target, "psql"), 0755)
         os.chmod(os.path.join(target, "createuser"), 0755)
         os.chmod(os.path.join(target, "createdb"), 0755)
