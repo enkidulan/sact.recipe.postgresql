@@ -106,9 +106,9 @@ class Recipe:
 
     def _install_cmmi_pg(self):
         try:
-            self.log.info('Install postgresql')
-            name = self.name + '-hexagonit.cmmi'
-            cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, name, self.options)
+            self.log.info('Compiling PostgreSQL')
+            opt = self.options.copy() # Mutable object, updated by hexagonit
+            cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, opt)
             cmmi.install()
         except:
             raise zc.buildout.UserError("Unable to install source version of postgresql")
@@ -290,7 +290,7 @@ class Recipe:
 def uninstall_postgresql(name, options):
     """Shutdown PostgreSQL server before uninstalling it."""
 
-    logging.getLogger(name).info("Trying to stop PostgreSQL server...")
+    logger = logging.getLogger(name)
 
     cmd = [os.path.join(options['bin_dir'], 'pg_ctl'),
            '-D', options['socket_dir'],
@@ -299,7 +299,20 @@ def uninstall_postgresql(name, options):
            '-m', 'immediate',
            'stop']
 
-    subprocess.Popen(cmd,
-                     stdout=subprocess.PIPE,
-                     stderr=subprocess.STDOUT
-                    ).wait()
+    if not os.path.exists(cmd[0]):
+        logger.info("No PostgreSQL binaries, will not try to stop the server.")
+    else:
+        logger.info("Trying to stop PostgreSQL server...")
+
+        try:
+            subprocess.Popen(cmd,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT
+                            ).wait()
+        except OSError, e:
+            # For some reason, it fails, continue anyway...
+            logger.warning("Could not stop PostgreSQL server (%s), "
+                           "uninstalling it anyway.", e)
+            pass
+
+
