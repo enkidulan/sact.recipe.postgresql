@@ -12,7 +12,7 @@ def get_version(version):
     except:
         return version
 
-version = '0.1dev'
+version = '0.2dev'
 long_description = open('docs/source/overview.txt', 'r').read()
 
 setup(name='sact.recipe.postgresql',
@@ -41,10 +41,11 @@ setup(name='sact.recipe.postgresql',
       },
       zip_safe=False,
       install_requires=[
-        'setuptools',
-        # -*- Extra requirements: -*-
-        'hexagonit.recipe.cmmi',
-	'Cheetah'
+          'setuptools',
+          # -*- Extra requirements: -*-
+          'hexagonit.recipe.cmmi',
+          'Cheetah',
+          'psycopg2'
       ],
       tests_require=['zope.testing',
         # -*- Extra requirements: -*-

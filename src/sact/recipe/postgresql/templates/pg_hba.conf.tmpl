@@ -1,18 +1,25 @@
+#if $PG_VERSION < '8.4'
+    #set $auth_method = 'ident sameuser'
+#else
+    #set $auth_method = 'ident'
+#end if
 ### Admin
 local   all         ${admin}                          trust
+
 #if $superusers
 ### Superusers
-#for $superuser in $superusers
-local   all         ${superuser}                     ident sameuser
-#end for
-#end if
-#if $users
-### Users
-#for $user in $users
-local   all         ${user}                           ident sameuser
-#end for
+    #for $superuser in $superusers
+local   all         ${superuser}                      ${auth_method}
+    #end for
 #end if
 
-local   all         all                               ident sameuser
+#if $users
+### Users
+    #for $user in $users
+local   all         ${user}                           ${auth_method}
+    #end for
+#end if
+
+local   all         all                               ${auth_method}
 host    all         all         127.0.0.1/32          md5
 host    all         all         ::1/128               md5
