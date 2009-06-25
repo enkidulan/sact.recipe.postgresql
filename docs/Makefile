@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD = /home/jon/projects/sa/repos/internal/sact.recipe.postgresql/bin/sphinx-build
+SPHINXBUILD = ../bin/sphinx-build
 PAPER         =
 
 # Internal variables.
