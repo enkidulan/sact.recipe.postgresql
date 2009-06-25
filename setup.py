@@ -13,10 +13,12 @@ def get_version(version):
         return version
 
 version = '0.1dev'
+long_description = open('docs/source/overview.txt', 'r').read()
 
 setup(name='sact.recipe.postgresql',
       version=get_version(version),
-      description="ZC.buildout recipe to build Postgresql.",
+      description="zc.buildout recipe to build PostgreSQL.",
+      long_description=long_description,
       # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
         'Framework :: Buildout',
