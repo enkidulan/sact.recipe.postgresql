@@ -47,9 +47,8 @@ class Recipe:
             self._install_compiled_pg()
         else:
             self._install_cmmi_pg()
-            self.log.info('Create database')
-            self._make_db()
-
+        
+        self._create_cluster()
         self._make_pg_config()
 
         cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
@@ -82,7 +81,7 @@ class Recipe:
             raise zc.buildout.UserError("Unable to install source version of postgresql")
 
     def _install_compiled_pg(self):
-        # Download the binaries using hexagonit.recipe.download
+        """Download the binaries using hexagonit.recipe.download"""
 
         try:
             opt = self.options.copy()
@@ -154,11 +153,24 @@ class Recipe:
             p = subprocess.Popen(cmd, shell=True)
             p.wait()
 
-    def _make_db(self):
-        os.mkdir(self.options['data_dir'])
-        cmd = '%s/initdb -D %s -U %s' % (self.options['bin_dir'], self.options['data_dir'], self.options['admin'])
-        os.chdir(self.options['bin_dir'])
-        os.system(cmd)
+    def _create_cluster(self):
+        """Create a new PostgreSQL cluster into the data directory."""
+
+        cluster_dir = self.options['data_dir']
+        if os.path.exists(cluster_dir):
+            self.log.warning("Cluster directory already exists, skipping "
+                             "cluster initialization...")
+            return
+        
+        self.log.info('Initializing a new PostgreSQL database cluster')
+        os.mkdir(cluster_dir)
+        cmd = [
+            os.path.join(self.options['bin_dir'], 'initdb'),
+            '-D', cluster_dir,
+            '-U', self.options['admin']
+        ]
+        proc = subprocess.Popen(cmd)
+        proc.wait()
 
     def _make_pg_config(self):
         self.log.info("Updating PostgreSQL configuration")
@@ -270,8 +282,6 @@ class Recipe:
         pg_fd.write("\n\n# Override default values here\n")
         pg_fd.write(self.options['postgresql.conf'])
         pg_fd.close()
-
-
 
 
 def uninstall_postgresql(name, options):
