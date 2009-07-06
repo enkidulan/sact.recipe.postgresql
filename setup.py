@@ -44,7 +44,7 @@ setup(name='sact.recipe.postgresql',
           'setuptools',
           # -*- Extra requirements: -*-
           'hexagonit.recipe.cmmi',
-          'Cheetah',
+          'tempita',
           'psycopg2'
       ],
       tests_require=['zope.testing',

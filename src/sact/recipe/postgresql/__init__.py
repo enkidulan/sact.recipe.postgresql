@@ -7,7 +7,7 @@ import textwrap
 
 import psycopg2
 import hexagonit.recipe.cmmi
-from Cheetah.Template import Template
+from tempita import Template
 
 current_dir = os.path.dirname(__file__)
 
@@ -181,57 +181,61 @@ class Recipe:
         except IOError:
             PG_VERSION = None
 
-        pg_tpl = Template(file=os.path.join(current_dir,'templates', 'postgresql.conf.tmpl'))
-        pghba_tpl = Template(file=os.path.join(current_dir,'templates', 'pg_hba.conf.tmpl'))
-        pgctl_tpl = Template(file=os.path.join(current_dir,'templates', 'pgctl.py.tmpl'))
-        psql_tpl = Template(file=os.path.join(current_dir,'templates', 'psql.sh.tmpl'))
-        createuser_tpl = Template(file=os.path.join(current_dir,'templates', 'createuser.sh.tmpl'))
-        createdb_tpl = Template(file=os.path.join(current_dir,'templates', 'createdb.sh.tmpl'))
+        def template_data(template_name):
+            file_name = os.path.join(current_dir, 'templates', template_name)
+            return open(file_name).read()
+
 
         # Minimal configuration file used to bootstrap the server. Will be
         # replaced with all default values soon after.
-        pg_tpl.data_dir = self.options['data_dir']
-        pg_tpl.config_dir = self.options['data_dir']
-        pg_tpl.pid_file = self.options['pid_file']
-        pg_tpl.socket_dir = self.options['socket_dir']
-        pg_tpl.listen_addresses = self.options['listen_addresses']
-        pg_tpl.unix_socket_directory = self.options['unix_socket_directory']
-        pg_tpl.port = self.options['port']
-
-        pghba_tpl.PG_VERSION = PG_VERSION
-        pghba_tpl.superusers = self.options['superusers'].split()
-        pghba_tpl.users = self.options['users'].split()
-        pghba_tpl.admin = self.options['admin']
-
+        pg_tpl = Template(template_data('postgresql.conf.tmpl'))
         pg_fd = open(os.path.join(self.options['data_dir'], "postgresql.conf"),'w')
+        pg_fd.write(
+            pg_tpl.substitute(
+                data_dir = self.options['data_dir'],
+                config_dir = self.options['data_dir'],
+                pid_file = self.options['pid_file'],
+                socket_dir = self.options['socket_dir'],
+                listen_addresses = self.options['listen_addresses'],
+                unix_socket_directory = self.options['unix_socket_directory'],
+                port = self.options['port'],
+            ))
+
+
+        pghba_tpl = Template(template_data('pg_hba.conf.tmpl'))
         pghba_fd = open(os.path.join(self.options['data_dir'], "pg_hba.conf"),'w')
+        pghba_fd.write(
+            pghba_tpl.substitute(
+                PG_VERSION = PG_VERSION,
+                superusers = self.options['superusers'].split(),
+                users = self.options['users'].split(),
+                admin = self.options['admin']
+            ))
 
-        target=os.path.join(self.buildout["buildout"]["bin-directory"])
-        pgctl_fd = open(os.path.join(target, "pgctl"),'w')
-        psql_fd = open(os.path.join(target, "psql"),'w')
-        createuser_fd = open(os.path.join(target, "createuser"),'w')
-        createdb_fd = open(os.path.join(target, "createdb"),'w')
+        # Scripts to be copied into the bin/ directory created by buildout
+        buildout_bin_dir = os.path.join(self.buildout["buildout"]["bin-directory"])
+        templates = [
+            ('pgctl.py.tmpl'     , 'pgctl'),
+            ('psql.sh.tmpl'      , 'psql'),
+            ('pgctl.py.tmpl'     , 'pgctl'),
+            ('createuser.sh.tmpl', 'createuser'),
+            ('createdb.sh.tmpl'  , 'createdb'),
+        ]
 
-        pgctl_tpl.bin_dir = self.options['bin_dir']
-        pgctl_tpl.data_dir = self.options['socket_dir']
-        psql_tpl.bin_dir = self.options['bin_dir']
-        psql_tpl.socket_dir = self.options['socket_dir']
-        createuser_tpl.bin_dir = self.options['bin_dir']
-        createuser_tpl.socket_dir = self.options['socket_dir']
-        createdb_tpl.bin_dir = self.options['bin_dir']
-        createdb_tpl.socket_dir = self.options['socket_dir']
+        for template_name, output_name in templates:
+            full_output_name = os.path.join(buildout_bin_dir, output_name)
 
-        print  >> pg_fd, pg_tpl
-        print  >> pghba_fd, pghba_tpl
-        print  >> pgctl_fd, pgctl_tpl
-        print  >> psql_fd, psql_tpl
-        print  >> createdb_fd, createdb_tpl
-        print  >> createuser_fd, createuser_tpl
+            template = Template(template_data(template_name))
+            output = open(full_output_name, 'w')
 
-        os.chmod(os.path.join(target, "pgctl"), 0755)
-        os.chmod(os.path.join(target, "psql"), 0755)
-        os.chmod(os.path.join(target, "createuser"), 0755)
-        os.chmod(os.path.join(target, "createdb"), 0755)
+            output.write(
+                template.substitute(
+                    bin_dir    = self.options['bin_dir'],
+                    socket_dir = self.options['socket_dir']
+                ))
+
+            output.close()
+            os.chmod(full_output_name, 0755)
 
     def _update_pg_config(self):
         """Update the PostgreSQL configuration file with our settings.
