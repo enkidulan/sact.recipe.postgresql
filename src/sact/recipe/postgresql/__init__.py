@@ -69,7 +69,7 @@ class Recipe:
         return self.options['location']
 
     def update(self):
-        self._make_pg_config()
+        pass
 
     def _install_cmmi_pg(self):
         try:
@@ -173,7 +173,7 @@ class Recipe:
         proc.wait()
 
     def _make_pg_config(self):
-        self.log.info("Updating PostgreSQL configuration")
+        self.log.info("Creating initial PostgreSQL configuration")
 
         try:
             PG_VERSION = open(os.path.join(self.options['data_dir'],
@@ -247,6 +247,8 @@ class Recipe:
         It needs a running database server in order to retrieve default
         values.
         """
+
+        self.log.info("Updating PostgreSQL configuration")
 
         conn = psycopg2.connect(
             host=self.options['data_dir'],
