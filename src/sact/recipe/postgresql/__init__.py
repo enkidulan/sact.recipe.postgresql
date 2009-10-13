@@ -4,6 +4,7 @@ import subprocess
 import os
 import time
 import textwrap
+import platform
 
 import psycopg2
 import hexagonit.recipe.cmmi
@@ -26,6 +27,7 @@ class Recipe:
 
         self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
         self.options['url-bin'] = options.get("url-bin", "")
+        self.options['bin-name'] = options.get("bin-name", "")
         self.options['bin_dir'] = options.get("bin-dir", os.path.join(self.options['location'], "bin"))
 
 
@@ -47,7 +49,7 @@ class Recipe:
             self._install_compiled_pg()
         else:
             self._install_cmmi_pg()
-        
+
         self._create_cluster()
         self._make_pg_config()
 
@@ -84,8 +86,11 @@ class Recipe:
         """Download the binaries using hexagonit.recipe.download"""
 
         try:
+
             opt = self.options.copy()
-            opt['url'] = self.options['url-bin']
+            opt['url'] = "%s/%s-%s.tgz" % (self.options['url-bin'],
+                                           self.options['bin-name'],
+                                           platform.machine())
             opt['destination'] = self.options['location']
             name = self.name + '-hexagonit.download'
             hexagonit.recipe.download.Recipe(self.buildout, name, opt).install()
@@ -161,7 +166,7 @@ class Recipe:
             self.log.warning("Cluster directory already exists, skipping "
                              "cluster initialization...")
             return
-        
+
         self.log.info('Initializing a new PostgreSQL database cluster')
         os.mkdir(cluster_dir)
         cmd = [
