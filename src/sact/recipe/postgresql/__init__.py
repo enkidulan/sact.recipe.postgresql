@@ -2,6 +2,7 @@ import zc.buildout
 import logging
 import subprocess
 import os
+import platform
 import time
 import textwrap
 
@@ -85,7 +86,8 @@ class Recipe:
 
         try:
             opt = self.options.copy()
-            opt['url'] = self.options['url-bin']
+            opt['url'] = self.options['url-bin'] % {'arch': platform.machine()}
+            self.log.info("Will download using %s", opt['url'])
             opt['destination'] = self.options['location']
             name = self.name + '-hexagonit.download'
             hexagonit.recipe.download.Recipe(self.buildout, name, opt).install()
