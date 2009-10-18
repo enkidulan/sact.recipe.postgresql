@@ -6,7 +6,6 @@ import platform
 import time
 import textwrap
 
-import psycopg2
 import hexagonit.recipe.cmmi
 from tempita import Template
 
@@ -252,14 +251,31 @@ class Recipe:
 
         self.log.info("Updating PostgreSQL configuration")
 
-        conn = psycopg2.connect(
-            host=self.options['data_dir'],
-            user=self.options['admin']
-        )
-        cursor = conn.cursor()
         # http://www.postgresql.org/docs/current/static/view-pg-settings.html
-        cursor.execute("SELECT name, setting, category, short_desc FROM pg_settings WHERE"
-                       " context != 'internal' ORDER BY name")
+        query = "SELECT name, setting, category, short_desc FROM pg_settings "\
+                "WHERE context != 'internal' ORDER BY name;"
+
+        cmd = [os.path.join(self.buildout['buildout']['bin-directory'], 'psql'),
+               '-h', self.options['socket_dir'],
+               '-U', self.options['admin'],
+               '--no-align', '--quiet', '--tuples-only']
+
+        p = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+
+        out, err = p.communicate(query)
+
+        # This should return immediately, since communicate() close the process
+        p.wait()
+
+        if err != '':
+            raise ValueError("Unable to get settings from PostgreSQL: %s" %
+                             (err,))
+
+
+        lines = [line.split('|') for line in out.strip().split('\n')]
+
 
         self.log.info("Re-writting the PostgreSQL configuration file with default "
                    "values...")
@@ -268,7 +284,7 @@ class Recipe:
         pg_fd.write("# Default configuration from PostgreSQL\n")
 
         old_category = None
-        for opt, value, category, desc in cursor:
+        for opt, value, category, desc in lines:
 
             if category != old_category:
                 header = "## %s ##" % category
