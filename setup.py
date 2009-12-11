@@ -12,7 +12,7 @@ def get_version(version):
     except:
         return version
 
-version = '0.3.1'
+version = '0.4.0dev'
 long_description = open('docs/source/overview.txt', 'r').read()
 
 setup(name='sact.recipe.postgresql',
