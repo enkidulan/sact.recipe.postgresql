@@ -1,0 +1,29 @@
+=========
+CHANGELOG
+=========
+
+0.3.0 (12-12-2009)
+==================
+
+New Features
+------------
+
+  - allow to specify the architecture in the download URL (Jonathan Ballet)
+
+Packaging
+---------
+
+  - removed dependency on psycopg2 (Jonathan Ballet)
+
+Others
+------
+
+  - [US36PG8] Do not update the PostgreSQL configuration at each buildout (Jonathan Ballet)
+  - [US00AA00] Download binary package for the right platform. (Sebastien Douche)
+  - Backed out changeset e5810102b4c6 (Jonathan Ballet)
+
+
+0.1.0 (unreleased)
+==================
+
+- Initial version.
