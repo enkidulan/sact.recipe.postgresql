@@ -2,6 +2,20 @@
 CHANGELOG
 =========
 
+0.3.1 (12-12-2009)
+==================
+
+Packaging
+---------
+
+  - added docs in MANIFEST. (Sebastien Douche)
+
+Others
+------
+
+  - Back to development: 0.4.0dev (Sebastien Douche)
+
+
 0.3.0 (12-12-2009)
 ==================
 
