@@ -232,7 +232,8 @@ class Recipe:
             output.write(
                 template.substitute(
                     bin_dir    = self.options['bin_dir'],
-                    socket_dir = self.options['socket_dir']
+                    socket_dir = self.options['socket_dir'],
+                    data_dir   = self.options['data_dir']
                 ))
 
             output.close()
