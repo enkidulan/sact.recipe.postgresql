@@ -47,11 +47,11 @@ class Recipe:
             self._install_compiled_pg()
         else:
             self._install_cmmi_pg()
-        
+
         self._create_cluster()
         self._make_pg_config()
 
-        cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
+        cmd = '%s/pgctl start' % self.options['bin_dir']
         p_start = subprocess.Popen(cmd, shell=True)
         p_start.wait()
 
@@ -62,7 +62,7 @@ class Recipe:
 
         self._update_pg_config()
 
-        cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
+        cmd = '%s/pgctl stop' % self.options['bin_dir']
         p_stop = subprocess.Popen(cmd, shell=True)
         p_stop.wait()
 
@@ -107,7 +107,7 @@ class Recipe:
 
         self.log.info("Wait for the database to startup...")
         cmd = [
-            os.path.join(self.buildout['buildout']['bin-directory'], 'psql'),
+            os.path.join(self.options['bin_dir'], 'psql'),
             '-h', self.options['socket_dir'],
             '-U', self.options['admin'],
             '-l'
@@ -136,7 +136,7 @@ class Recipe:
         superusers = self.options['superusers'].split()
         for superuser in superusers:
             self.log.info('create superuser %s' % superuser)
-            cmd = '%s/createuser -s -d -r -h %s -U %s %s' % (self.buildout['buildout']['bin-directory'],
+            cmd = '%s/createuser -s -d -r -h %s -U %s %s' % (self.options['bin_dir'],
                                                        self.options['socket_dir'],
                                                        self.options['admin'],
                                                        superuser)
@@ -147,7 +147,7 @@ class Recipe:
         users = self.options['users'].split()
         for user in users:
             self.log.info('create user %s' % user)
-            cmd = '%s/createuser -S -D -R -h %s -U %s %s' % (self.buildout['buildout']['bin-directory'],
+            cmd = '%s/createuser -S -D -R -h %s -U %s %s' % (self.options['bin_dir'],
                                                  self.options['socket_dir'],
                                                  self.options['admin'],
                                                  user)
@@ -162,7 +162,7 @@ class Recipe:
             self.log.warning("Cluster directory already exists, skipping "
                              "cluster initialization...")
             return
-        
+
         self.log.info('Initializing a new PostgreSQL database cluster')
         os.mkdir(cluster_dir)
         cmd = [
@@ -256,7 +256,7 @@ class Recipe:
         query = "SELECT name, setting, category, short_desc FROM pg_settings "\
                 "WHERE context != 'internal' ORDER BY name;"
 
-        cmd = [os.path.join(self.buildout['buildout']['bin-directory'], 'psql'),
+        cmd = [os.path.join(self.options['bin_dir'], 'psql'),
                '-h', self.options['socket_dir'],
                '-U', self.options['admin'],
                '--no-align', '--quiet', '--tuples-only']
