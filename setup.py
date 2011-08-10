@@ -1,13 +1,15 @@
 from setuptools import setup, find_packages
 
+
 setup(
     name='sact.recipe.postgresql',
     version='%%version%%',
     description="zc.buildout recipe to build PostgreSQL.",
-    long_description=open("docs/source/overview.rst").read() + open("docs/source/changelog.rst").read(),
-    # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
+    long_description=open("docs/source/overview.rst").read() + \
+                     open("docs/source/changelog.rst").read(),
+    # Get more strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
-      'Development Status :: 5 - Production/Stable',
+      'Development Status :: 4 - Beta',
       'Framework :: Buildout :: Recipe',
       'Intended Audience :: Developers',
       'Topic :: Software Development :: Build Tools',
