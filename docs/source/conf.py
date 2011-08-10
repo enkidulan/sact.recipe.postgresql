@@ -35,8 +35,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General substitutions.
-project = 'NSS'
-copyright = '2009, securactive'
+project = 'sact.recipe.postgresql'
+copyright = '2011, securactive'
 
 # The default replacements for |version| and |release|, also used in various
 # other places throughout the built documents.
