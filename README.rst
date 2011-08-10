@@ -35,14 +35,6 @@ You can test or use this code simply by launching::
 This will install all dependency needed by this code to start coding.
 
 
-TEST
-----
-
-Test framework is available through standard z3c.testsetup mecanism::
-
-  bin/test
-
-
 DOC
 ---
 

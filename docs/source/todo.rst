@@ -8,3 +8,5 @@ Todo
 
 - some buildout options around bin-dir are unreliable and seems mixed up in
   some places. Should be thoroughly reviewed and corrected and documented.
+
+- write tests.
