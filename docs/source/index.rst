@@ -1,12 +1,28 @@
-Welcome to ``sact.recipe.postgresql``'s documentation!
-======================================================
+.. -*- rst -*-
+.. vim:ft=rst
 
-.. include:: overview.txt
+sact.recipe.postgresql documentation
+====================================
 
-Contents:
+.. include:: overview.rst
+
+Todo & changelog
+================
 
 .. toctree::
    :maxdepth: 2
+
+   todo
+   changelog
+
+Meta information
+================
+
+.. toctree::
+   :maxdepth: 2
+
+   licence
+
 
 Indices and tables
 ==================
@@ -14,6 +30,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-
-.. include:: changelog.rst

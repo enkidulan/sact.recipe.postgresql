@@ -26,16 +26,16 @@ Supported options
 The recipe supports the following options:
 
 admin
-    Aministrator accounts to create. Default to postgres.
+    Aministrator accounts to create. Defaults to ``postgres``.
 
 superusers
-    Super-users accounts to create. Default to root.
+    Super-users accounts to create. Defaults to ``root``.
 
 users
     User accounts to create.
 
 location
-   Destination of Postgresql. Default to the Buildout name section.
+   Destination of Postgresql. Defaults to the buildout section name.
 
 url
    Download URL for the target source version of Postgresql (required if
@@ -43,7 +43,7 @@ url
 
 url-bin
    Download URL for the target binary version of Postgresql. This option is
-   always used if she is set.
+   always used if it is set.
 
 bin_dir
     Folder of binaries. Defaults to ${location}.
@@ -76,9 +76,3 @@ The syntax must follow the Python convention (read the sys.platform documentatio
 The goal is to use a CI tool on various platforms without create an buildout
 file to each one.
 
-Note
-====
-
-If you launch Postgresql without a default one on your system, the recipe says
-*waiting for server to start........could not start server*. We don't know
-why.
