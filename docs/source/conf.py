@@ -29,7 +29,7 @@ extensions = ['sphinx.ext.autodoc','sphinx.ext.doctest','sphinx.ext.coverage',]
 templates_path = ['.templates']
 
 # The suffix of source filenames.
-source_suffix = '.txt'
+source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
@@ -42,9 +42,9 @@ copyright = '2009, securactive'
 # other places throughout the built documents.
 #
 # The short X.Y version.
-version = '0.5'
+version = '%%short-version%%'
 # The full version, including alpha/beta/rc tags.
-release = '0.5.0'
+release = '%%version%%'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
