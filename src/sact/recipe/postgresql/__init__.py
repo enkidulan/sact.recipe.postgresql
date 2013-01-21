@@ -43,28 +43,31 @@ class Recipe:
 
 
     def install(self):
-        if self.options['url-bin']:
-            self._install_compiled_pg()
+        if os.path.exists(self.options['location']):
+            self.log.info('Postgresql detected, make nothing')
         else:
-            self._install_cmmi_pg()
+            if self.options['url-bin']:
+                self._install_compiled_pg()
+            else:
+                self._install_cmmi_pg()
 
-        self._create_cluster()
-        self._make_pg_config()
+            self._create_cluster()
+            self._make_pg_config()
 
-        cmd = '%s/pgctl start' % self.options['bin_dir']
-        p_start = subprocess.Popen(cmd, shell=True)
-        p_start.wait()
+            cmd = '%s/pgctl start' % self.options['bin_dir']
+            p_start = subprocess.Popen(cmd, shell=True)
+            p_start.wait()
 
-        self.wait_for_startup()
+            self.wait_for_startup()
 
-        self._create_superusers()
-        self._create_users()
+            self._create_superusers()
+            self._create_users()
 
-        self._update_pg_config()
+            self._update_pg_config()
 
-        cmd = '%s/pgctl stop' % self.options['bin_dir']
-        p_stop = subprocess.Popen(cmd, shell=True)
-        p_stop.wait()
+            cmd = '%s/pgctl stop' % self.options['bin_dir']
+            p_stop = subprocess.Popen(cmd, shell=True)
+            p_stop.wait()
 
         return self.options['location']
 
