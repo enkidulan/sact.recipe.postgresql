@@ -54,7 +54,7 @@ class Recipe:
             self._create_cluster()
             self._make_pg_config()
 
-            cmd = '%s/pgctl start' % self.options['bin_dir']
+            cmd = '%s/pgctl start' % self.buildout['buildout']['bin-directory']
             p_start = subprocess.Popen(cmd, shell=True)
             p_start.wait()
 
@@ -65,7 +65,7 @@ class Recipe:
 
             self._update_pg_config()
 
-            cmd = '%s/pgctl stop' % self.options['bin_dir']
+            cmd = '%s/pgctl stop' % self.buildout['buildout']['bin-directory']
             p_stop = subprocess.Popen(cmd, shell=True)
             p_stop.wait()
 
