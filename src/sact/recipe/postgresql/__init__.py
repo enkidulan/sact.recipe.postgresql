@@ -2,6 +2,7 @@ import zc.buildout
 import logging
 import subprocess
 import os
+import sys
 import platform
 import time
 import textwrap
@@ -19,30 +20,32 @@ class Recipe:
         self.buildout = buildout
         self.name = name
         self.log = logging.getLogger(self.name)
+        self.pgconf = {}
+
+        self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
+        self.options['bin-dir'] = os.path.join(self.options['location'], "bin")
 
         self.options['admin'] = options.get("admin", "postgres")
         self.options['superusers'] = options.get("superusers", "root")
         self.options['users'] = options.get("users", "")
-
-        self.options['location'] = os.path.join(buildout['buildout']['parts-directory'], self.name)
+        self.options['url'] = options.get("url", "")
         self.options['url-bin'] = options.get("url-bin", "")
-        self.options['bin_dir'] = options.get("bin-dir", os.path.join(self.options['location'], "bin"))
-
-
-        # Options specific to the PostgreSQL location
-        default_config_dir = os.path.join(self.options['location'], "db")
-
-        self.options['data_dir'] = options.get("config-dir", default_config_dir)
-        self.options['pid_file'] = options.get(
-            "pid-file", os.path.join(default_config_dir, "postgresql.pid"))
-        self.options['socket_dir'] = options.get("pid-file", default_config_dir)
-        self.options['listen_addresses'] = options.get('listen_addresses', '')
-        self.options['unix_socket_directory'] = options.get('unix_socket_directory', self.options['location'])
-        self.options['port'] = options.get('port', '5432')
-        self.options['postgresql.conf'] = options.get('postgresql.conf', '')
-
+        self.options['postgresql.conf'] = options.get('postgresql.conf', "")
 
     def install(self):
+	self._parse_pg_conf()
+
+        # Hardcoded parameters. Automatic discover would be better.
+        if 'unix_socket_directory' in self.pgconf:
+            self.options['socket-dir'] = self.pgconf['unix_socket_directory'].strip("'").strip('"')
+        elif 'unix_socket_directories' in self.pgconf:
+            self.options['socket-dir'] = self.pgconf['unix_socket_directories'].strip("'").strip('"')
+        else:
+            self.log.error('Cannot find the socket directory')
+            sys.exit(1)
+
+        self.options['data-dir'] = self.pgconf['data_directory'].strip("'").strip('"')
+
         if os.path.exists(self.options['location']):
             self.log.info('Postgresql detected, make nothing')
         else:
@@ -73,6 +76,18 @@ class Recipe:
 
     def update(self):
         pass
+
+    def _parse_pg_conf(self):
+        parsed_conf = {}
+
+        lines = self.options['postgresql.conf'].split('\n')
+
+        for line in lines:
+            if line != "":
+                argument, content = line.split('=')
+                parsed_conf[argument.strip()] = content.strip()
+
+        self.pgconf = parsed_conf
 
     def _install_cmmi_pg(self):
         try:
@@ -110,8 +125,8 @@ class Recipe:
 
         self.log.info("Wait for the database to startup...")
         cmd = [
-            os.path.join(self.options['bin_dir'], 'psql'),
-            '-h', self.options['socket_dir'],
+            os.path.join(self.options['bin-dir'], 'psql'),
+            '-h', self.options['socket-dir'],
             '-U', self.options['admin'],
             '-l'
         ]
@@ -139,10 +154,10 @@ class Recipe:
         superusers = self.options['superusers'].split()
         for superuser in superusers:
             self.log.info('create superuser %s' % superuser)
-            cmd = '%s/createuser -s -d -r -h %s -U %s %s' % (self.options['bin_dir'],
-                                                       self.options['socket_dir'],
-                                                       self.options['admin'],
-                                                       superuser)
+            cmd = '%s/createuser -s -d -r -h %s -U %s %s' % (self.options['bin-dir'],
+                                                             self.options['socket-dir'],
+                                                             self.options['admin'],
+                                                             superuser)
             p = subprocess.Popen(cmd, shell=True)
             p.wait()
 
@@ -150,17 +165,17 @@ class Recipe:
         users = self.options['users'].split()
         for user in users:
             self.log.info('create user %s' % user)
-            cmd = '%s/createuser -S -D -R -h %s -U %s %s' % (self.options['bin_dir'],
-                                                 self.options['socket_dir'],
-                                                 self.options['admin'],
-                                                 user)
+            cmd = '%s/createuser -S -D -R -h %s -U %s %s' % (self.options['bin-dir'],
+                                                             self.options['socket-dir'],
+                                                             self.options['admin'],
+                                                             user)
             p = subprocess.Popen(cmd, shell=True)
             p.wait()
 
     def _create_cluster(self):
         """Create a new PostgreSQL cluster into the data directory."""
 
-        cluster_dir = self.options['data_dir']
+        cluster_dir = self.options['data-dir']
         if os.path.exists(cluster_dir):
             self.log.warning("Cluster directory already exists, skipping "
                              "cluster initialization...")
@@ -169,7 +184,7 @@ class Recipe:
         self.log.info('Initializing a new PostgreSQL database cluster')
         os.mkdir(cluster_dir)
         cmd = [
-            os.path.join(self.options['bin_dir'], 'initdb'),
+            os.path.join(self.options['bin-dir'], 'initdb'),
             '-D', cluster_dir,
             '-U', self.options['admin']
         ]
@@ -180,7 +195,7 @@ class Recipe:
         self.log.info("Creating initial PostgreSQL configuration")
 
         try:
-            PG_VERSION = open(os.path.join(self.options['data_dir'],
+            PG_VERSION = open(os.path.join(self.options['data-dir'],
                                            'PG_VERSION')).read()
         except IOError:
             PG_VERSION = None
@@ -192,22 +207,11 @@ class Recipe:
 
         # Minimal configuration file used to bootstrap the server. Will be
         # replaced with all default values soon after.
-        pg_tpl = Template(template_data('postgresql.conf.tmpl'))
-        pg_fd = open(os.path.join(self.options['data_dir'], "postgresql.conf"),'w')
-        pg_fd.write(
-            pg_tpl.substitute(
-                data_dir = self.options['data_dir'],
-                config_dir = self.options['data_dir'],
-                pid_file = self.options['pid_file'],
-                socket_dir = self.options['socket_dir'],
-                listen_addresses = self.options['listen_addresses'],
-                unix_socket_directory = self.options['unix_socket_directory'],
-                port = self.options['port'],
-            ))
-
+        pg_fd = open(os.path.join(self.options['data-dir'], "postgresql.conf"),'w')
+        pg_fd.write(self.options['postgresql.conf'])
 
         pghba_tpl = Template(template_data('pg_hba.conf.tmpl'))
-        pghba_fd = open(os.path.join(self.options['data_dir'], "pg_hba.conf"),'w')
+        pghba_fd = open(os.path.join(self.options['data-dir'], "pg_hba.conf"),'w')
         pghba_fd.write(
             pghba_tpl.substitute(
                 PG_VERSION = PG_VERSION,
@@ -234,9 +238,9 @@ class Recipe:
 
             output.write(
                 template.substitute(
-                    bin_dir    = self.options['bin_dir'],
-                    socket_dir = self.options['socket_dir'],
-                    data_dir   = self.options['data_dir']
+                    bin_dir    = self.options['bin-dir'],
+                    socket_dir = self.options['socket-dir'],
+                    data_dir   = self.options['data-dir']
                 ))
 
             output.close()
@@ -259,10 +263,10 @@ class Recipe:
         query = "SELECT name, setting, category, short_desc FROM pg_settings "\
                 "WHERE context != 'internal' ORDER BY name;"
 
-        cmd = [os.path.join(self.options['bin_dir'], 'psql'),
-               '-h', self.options['socket_dir'],
+        cmd = [os.path.join(self.options['bin-dir'], 'psql'),
+               '-h', self.options['socket-dir'],
                '-U', self.options['admin'],
-               '--no-align', '--quiet', '--tuples-only']
+               '--no-align', '--quiet', '--tuples-only', 'template1']
 
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE,
                              stdout=subprocess.PIPE,
@@ -284,7 +288,7 @@ class Recipe:
         self.log.info("Re-writting the PostgreSQL configuration file with default "
                    "values...")
 
-        pg_fd = open(os.path.join(self.options['data_dir'], "postgresql.conf"), 'w')
+        pg_fd = open(os.path.join(self.options['data-dir'], "postgresql.conf"), 'w')
         pg_fd.write("# Default configuration from PostgreSQL\n")
 
         old_category = None
@@ -310,32 +314,3 @@ class Recipe:
         pg_fd.write("\n\n# Override default values here\n")
         pg_fd.write(self.options['postgresql.conf'])
         pg_fd.close()
-
-
-def uninstall_postgresql(name, options):
-    """Shutdown PostgreSQL server before uninstalling it."""
-
-    logger = logging.getLogger(name)
-
-    cmd = [os.path.join(options['bin_dir'], 'pg_ctl'),
-           '-D', options['socket_dir'],
-           '-w',
-           '-t', '1',
-           '-m', 'immediate',
-           'stop']
-
-    if not os.path.exists(cmd[0]):
-        logger.info("No PostgreSQL binaries, will not try to stop the server.")
-    else:
-        logger.info("Trying to stop PostgreSQL server...")
-
-        try:
-            subprocess.Popen(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT
-                            ).wait()
-        except OSError, e:
-            # For some reason, it fails, continue anyway...
-            logger.warning("Could not stop PostgreSQL server (%s), "
-                           "uninstalling it anyway.", e)
-            pass
