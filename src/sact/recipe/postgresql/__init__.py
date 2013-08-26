@@ -12,6 +12,7 @@ from tempita import Template
 
 current_dir = os.path.dirname(__file__)
 
+
 class Recipe:
     """zc.buildout recipe for Postgresql"""
 
@@ -33,7 +34,7 @@ class Recipe:
         self.options['postgresql.conf'] = options.get('postgresql.conf', "")
 
     def install(self):
-	self._parse_pg_conf()
+        self._parse_pg_conf()
 
         # Hardcoded parameters. Automatic discover would be better.
         if 'unix_socket_directory' in self.pgconf:
@@ -92,7 +93,7 @@ class Recipe:
     def _install_cmmi_pg(self):
         try:
             self.log.info('Compiling PostgreSQL')
-            opt = self.options.copy() # Mutable object, updated by hexagonit
+            opt = self.options.copy()  # Mutable object, updated by hexagonit
             cmmi = hexagonit.recipe.cmmi.Recipe(self.buildout, self.name, opt)
             cmmi.install()
         except:
@@ -148,7 +149,7 @@ class Recipe:
             # Stop the buildout, we have waited too much time and it means their
             # should be some kind of problem.
             raise zc.buildout.UserError("Unable to communicate with PostgreSQL:\n%s" %
-                            proc.stdout.read())
+                                        proc.stdout.read())
 
     def _create_superusers(self):
         superusers = self.options['superusers'].split()
@@ -204,31 +205,26 @@ class Recipe:
             file_name = os.path.join(current_dir, 'templates', template_name)
             return open(file_name).read()
 
-
         # Minimal configuration file used to bootstrap the server. Will be
         # replaced with all default values soon after.
-        pg_fd = open(os.path.join(self.options['data-dir'], "postgresql.conf"),'w')
+        pg_fd = open(os.path.join(self.options['data-dir'], "postgresql.conf"), 'w')
         pg_fd.write(self.options['postgresql.conf'])
 
         pghba_tpl = Template(template_data('pg_hba.conf.tmpl'))
-        pghba_fd = open(os.path.join(self.options['data-dir'], "pg_hba.conf"),'w')
-        pghba_fd.write(
-            pghba_tpl.substitute(
-                PG_VERSION = PG_VERSION,
-                superusers = self.options['superusers'].split(),
-                users = self.options['users'].split(),
-                admin = self.options['admin']
-            ))
+        pghba_fd = open(os.path.join(self.options['data-dir'], "pg_hba.conf"), 'w')
+        pghba_fd.write(pghba_tpl.substitute(PG_VERSION=PG_VERSION,
+                                            superusers=self.options['superusers'].split(),
+                                            users=self.options['users'].split(),
+                                            admin=self.options['admin']
+                                            ))
 
         # Scripts to be copied into the bin/ directory created by buildout
         buildout_bin_dir = os.path.join(self.buildout["buildout"]["bin-directory"])
-        templates = [
-            ('pgctl.py.tmpl'     , 'pgctl'),
-            ('psql.sh.tmpl'      , 'psql'),
-            ('pgctl.py.tmpl'     , 'pgctl'),
-            ('createuser.sh.tmpl', 'createuser'),
-            ('createdb.sh.tmpl'  , 'createdb'),
-        ]
+        templates = [('pgctl.py.tmpl', 'pgctl'),
+                     ('psql.sh.tmpl', 'psql'),
+                     ('pgctl.py.tmpl', 'pgctl'),
+                     ('createuser.sh.tmpl', 'createuser'),
+                     ('createdb.sh.tmpl', 'createdb')]
 
         for template_name, output_name in templates:
             full_output_name = os.path.join(buildout_bin_dir, output_name)
@@ -237,11 +233,9 @@ class Recipe:
             output = open(full_output_name, 'w')
 
             output.write(
-                template.substitute(
-                    bin_dir    = self.options['bin-dir'],
-                    socket_dir = self.options['socket-dir'],
-                    data_dir   = self.options['data-dir']
-                ))
+                template.substitute(bin_dir=self.options['bin-dir'],
+                                    socket_dir=self.options['socket-dir'],
+                                    data_dir=self.options['data-dir']))
 
             output.close()
             os.chmod(full_output_name, 0755)
@@ -281,12 +275,10 @@ class Recipe:
             raise ValueError("Unable to get settings from PostgreSQL: %s" %
                              (err,))
 
-
         lines = [line.split('|') for line in out.strip().split('\n')]
 
-
         self.log.info("Re-writting the PostgreSQL configuration file with default "
-                   "values...")
+                      "values...")
 
         pg_fd = open(os.path.join(self.options['data-dir'], "postgresql.conf"), 'w')
         pg_fd.write("# Default configuration from PostgreSQL\n")
@@ -309,7 +301,7 @@ class Recipe:
             pg_fd.write("# %s\n%s = %r\n\n" % (desc, opt, value))
 
         self.log.info("Updating the PostgreSQL configuration with the settings "
-                   "from buildout configuration file...")
+                      "from buildout configuration file...")
 
         pg_fd.write("\n\n# Override default values here\n")
         pg_fd.write(self.options['postgresql.conf'])
