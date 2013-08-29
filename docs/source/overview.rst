@@ -45,27 +45,13 @@ url-bin
    Download URL for the target binary version of Postgresql. This option is
    always used if it is set.
 
-bin_dir
-    Folder of binaries. Defaults to ${location}.
-
-data_dir
-    Folder of data. Defaults ${location}.
-
-pid_file
-    The pid file of postgresql. Defaults to
-    ${location}/db/postgresql.pid
-
-listen_adresses
-    Listen adresses. Defaults to all.
-
-unix_socket_directory
-    Folder of the Unix socket. Defaults to ${location}
-
-port
-    The port number Postgresql listen to. Default to 5432.
+conf_dir
+    Folder of configuration files (the folder must exist). Defaults to ${location}.
 
 postgresql.conf
-    Custom Postgresql configuration.
+    Custom Postgresql configuration. Two options are required:
+    data_directory unix_socket_directories (unix_socket_directory for older
+    versions of PostgreSQL).
 
 
 Binary url
@@ -75,4 +61,42 @@ The recipe can detect automatically your platform within *(arch)s* in the url.
 The syntax must follow the Python convention (read the sys.platform documentation).
 The goal is to use a CI tool on various platforms without create an buildout
 file to each one.
+
+The binary mode is useful when you use a CI tool: you can test quickly the new
+code.
+
+Examples
+========
+
+Simple example:
+
+[pg92]
+recipe = sact.recipe.postgresql
+url = http://ftp.postgresql.org/pub/source/v9.2.2/postgresql-9.2.2.tar.bz2
+conf-dir = /etc/postgresql/9.2
+postgresql.conf =
+    data_directory = '/srv/postgresql/9.2/db'
+    unix_socket_directories = '/var/run'
+
+More options:
+
+[pg92]
+recipe = sact.recipe.postgresql
+url = http://ftp.postgresql.org/pub/source/v9.2.2/postgresql-9.2.2.tar.bz2
+configure-options =
+    --without-readline
+    --with-python
+make-options =
+    -j10
+conf-dir = /etc/postgresql/9.2
+postgresql.conf =
+    data_directory = '/srv/postgresql/9.2/db'
+    unix_socket_directories = '/var/run'
+    listen_addresses = ''
+    fsync = off
+    synchronous_commit = off
+    full_page_writes = off
+    wal_buffers = 1024kB
+    wal_writer_delay = 5000ms
+
 
