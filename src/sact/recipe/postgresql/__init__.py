@@ -69,11 +69,9 @@ class Recipe:
         if not self.options['verbose-conf'] == "":
             self._update_pg_config()
 
-        cmd = [os.path.join(self.options['bin-dir'], 'pg_ctl'),
-               '-D', self.datadir,
-               '-m',
-               'fast',
-               'stop']
+        cmd = '%s -D %s -o "-c config_file=%s" stop' % (os.path.join(self.options['bin-dir'], 'pg_ctl'),
+                                                        self.datadir,
+                                                        os.path.join(self.options['conf-dir'], 'postgresql.conf'))
 
         p_stop = subprocess.Popen(cmd,
                                   stdout=subprocess.PIPE,
