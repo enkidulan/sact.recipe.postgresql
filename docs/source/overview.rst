@@ -12,13 +12,17 @@ It can install the database server from:
     * pre-compiled binary: if you already have a compiled version of PostgreSQL,
       you can also reuse it to speed up the buildout process.
 
-
 The recipe will give you several tools in the ``bin/`` directory to control the
 server. Thus, you will be able to start and stop it, launch a command line
 utility on the server, and so on.
 
+It makes use of `hexagonit.recipe.cmmi`_ and `hexagonit.recipe.download`_
+behind the scenes, so all options for these recipes are also valid.
+
 .. _zc.buildout: http://www.buildout.org
 .. _PostgreSQL: http://www.postgresql.org
+.. _hexagonit.recipe.cmmi: http://pypi.python.org/pypi/hexagonit.recipe.cmmi
+.. _hexagonit.recipe.download: http://pypi.python.org/pypi/hexagonit.recipe.download
 
 Supported options
 =================
@@ -50,9 +54,13 @@ conf_dir
 
 postgresql.conf
     Custom Postgresql configuration. Two options are required:
-    data_directory unix_socket_directories (unix_socket_directory for older
-    versions of PostgreSQL).
+    - ``data_directory``
+    - ``unix_socket_directories`` (``unix_socket_directory`` for older versions
+      of PostgreSQL).
 
+verbose-conf
+    If ``true``, include defaults reported by postgres server into generated
+    configuration file. Defaults to false.
 
 Binary url
 ==========
@@ -68,35 +76,35 @@ code.
 Examples
 ========
 
-Simple example:
+Simple example::
 
-[pg92]
-recipe = sact.recipe.postgresql
-url = http://ftp.postgresql.org/pub/source/v9.2.2/postgresql-9.2.2.tar.bz2
-conf-dir = /etc/postgresql/9.2
-postgresql.conf =
-    data_directory = '/srv/postgresql/9.2/db'
-    unix_socket_directories = '/var/run'
+    [pg92]
+    recipe = sact.recipe.postgresql
+    url = http://ftp.postgresql.org/pub/source/v9.2.2/postgresql-9.2.2.tar.bz2
+    conf-dir = /etc/postgresql/9.2
+    postgresql.conf =
+        data_directory = '/srv/postgresql/9.2/db'
+        unix_socket_directories = '/var/run'
 
-More options:
+More options::
 
-[pg92]
-recipe = sact.recipe.postgresql
-url = http://ftp.postgresql.org/pub/source/v9.2.2/postgresql-9.2.2.tar.bz2
-configure-options =
-    --without-readline
-    --with-python
-make-options =
-    -j10
-conf-dir = /etc/postgresql/9.2
-postgresql.conf =
-    data_directory = '/srv/postgresql/9.2/db'
-    unix_socket_directories = '/var/run'
-    listen_addresses = ''
-    fsync = off
-    synchronous_commit = off
-    full_page_writes = off
-    wal_buffers = 1024kB
-    wal_writer_delay = 5000ms
+    [pg92]
+    recipe = sact.recipe.postgresql
+    url = http://ftp.postgresql.org/pub/source/v9.2.2/postgresql-9.2.2.tar.bz2
+    configure-options =
+        --without-readline
+        --with-python
+    make-options =
+        -j10
+    conf-dir = /etc/postgresql/9.2
+    postgresql.conf =
+        data_directory = '/srv/postgresql/9.2/db'
+        unix_socket_directories = '/var/run'
+        listen_addresses = ''
+        fsync = off
+        synchronous_commit = off
+        full_page_writes = off
+        wal_buffers = 1024kB
+        wal_writer_delay = 5000ms
 
 
