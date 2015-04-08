@@ -87,9 +87,9 @@ class Recipe:
         # Extract data_directory and unix_socket_{directory|directories}
 
         parsed_conf = {}
+        self.datadir = self.socketdir = None
 
         lines = self.options['postgresql.conf'].split('\n')
-
         for line in lines:
             if line != "":
                 argument, content = line.split('=')
