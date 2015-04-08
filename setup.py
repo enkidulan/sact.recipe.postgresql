@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='sact.recipe.postgresql',
-    version='%%version%%',
+    version="99+develop",
     description="zc.buildout recipe to build PostgreSQL.",
     long_description=open("docs/source/overview.rst").read() + \
                      open("docs/source/changelog.rst").read(),
