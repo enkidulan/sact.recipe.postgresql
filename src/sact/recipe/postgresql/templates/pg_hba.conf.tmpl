@@ -1,25 +1,21 @@
-{{if PG_VERSION < '8.4'}}
-    {{py:auth_method = 'ident sameuser'}}
-{{else}}
-    {{py:auth_method = 'ident'}}
-{{endif}}
+{% set auth_method = ('ident sameuser' if PG_VERSION < '8.4' else 'ident') %}
 ### Admin
-local   all         {{admin}}                          trust
+local   all         {{ admin }}                          trust
 
-{{if superusers}}
+{% if superusers %}
 ### Superusers
-    {{for superuser in superusers}}
-local   all         {{superuser}}                      {{auth_method}}
-    {{endfor}}
-{{endif}}
+    {% for superuser in superusers %}
+local   all         {{ superuser }}                      {{ auth_method }}
+    {% endfor %}
+{% endif %}
 
-{{if users}}
+{% if users %}
 ### Users
-    {{for user in users}}
-local   all         {{user}}                           {{auth_method}}
-    {{endfor}}
-{{endif}}
+    {% for user in users %}
+local   all         {{ user }}                           {{ auth_method }}
+    {% endfor %}
+{% endif %}
 
-local   all         all                               {{auth_method}}
+local   all         all                               {{ auth_method }}
 host    all         all         127.0.0.1/32          md5
 host    all         all         ::1/128               md5

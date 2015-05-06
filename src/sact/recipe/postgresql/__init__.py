@@ -8,7 +8,8 @@ import time
 import textwrap
 
 import hexagonit.recipe.cmmi
-from tempita import Template
+from jinja2 import Template
+
 
 current_dir = os.path.dirname(__file__)
 
@@ -237,11 +238,11 @@ class Recipe:
 
         pghba_tpl = Template(template_data('pg_hba.conf.tmpl'))
         pghba_fd = open(os.path.join(self.options['conf-dir'], "pg_hba.conf"), 'w')
-        pghba_fd.write(pghba_tpl.substitute(PG_VERSION=pg_version,
-                                            superusers=self.options['superusers'].split(),
-                                            users=self.options['users'].split(),
-                                            admin=self.options['admin']
-                                            ))
+        pghba_fd.write(pghba_tpl.render(PG_VERSION=pg_version,
+                                        superusers=self.options['superusers'].split(),
+                                        users=self.options['users'].split(),
+                                        admin=self.options['admin']
+                                    ))
 
     def _update_pg_config(self):
         """Update the PostgreSQL configuration file with our settings.

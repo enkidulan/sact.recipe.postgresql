@@ -34,7 +34,7 @@ setup(
         'setuptools',
         # -*- Extra requirements: -*-
         'hexagonit.recipe.cmmi',
-        'tempita',
+        'jinja2',
     ],
     tests_require=['zope.testing',
       # -*- Extra requirements: -*-
