@@ -76,7 +76,8 @@ class Recipe:
 
         p_stop = subprocess.Popen(cmd,
                                   stdout=subprocess.PIPE,
-                                  stderr=subprocess.STDOUT)
+                                  stderr=subprocess.STDOUT,
+                                  shell=True)
         p_stop.wait()
 
         return self.options['location']
