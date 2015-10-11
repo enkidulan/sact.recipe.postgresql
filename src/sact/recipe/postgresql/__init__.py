@@ -219,7 +219,7 @@ class Recipe:
             version = open(os.path.join(self.datadir,
                                         'PG_VERSION')).read()
         except IOError:
-            version = None
+            version = ''
 
         return version
 
